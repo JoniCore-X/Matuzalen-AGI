@@ -15,10 +15,12 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.views.generic import TemplateView
 from cognitive_api.views import api_root
 
 urlpatterns = [
-    path('', api_root, name='api_root'),
+    path('', TemplateView.as_view(template_name='chat.html'), name='chat_ui'),
+    path('api-info/', api_root, name='api_root'),
     path('admin/', admin.site.urls),
     path('api/', include('cognitive_api.urls')),
 ]

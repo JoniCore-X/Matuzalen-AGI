@@ -39,4 +39,8 @@ urlpatterns = [
     path('consciousness/control', views.control_consciousness, name='control_consciousness'),
     path('consciousness/state', views.get_consciousness_state, name='get_consciousness_state'),
     path('consciousness/interval', views.set_perception_interval, name='set_perception_interval'),
+
+    # Chat with agent
+    path('chat', views.chat_with_agent, name='chat_with_agent'),
+    path('chat/simple', views.chat_simple, name='chat_simple'),
 ]

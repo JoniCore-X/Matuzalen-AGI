@@ -74,3 +74,9 @@ class ConsciousnessControlSerializer(serializers.Serializer):
     """Serializer para control de conciencia"""
     command = serializers.ChoiceField(choices=['awaken', 'sleep', 'focus', 'meditate'])
     parameter = serializers.CharField(required=False, allow_blank=True)
+
+
+class ChatMessageSerializer(serializers.Serializer):
+    """Serializer para mensajes de chat"""
+    message = serializers.CharField(max_length=2000)
+    context = serializers.DictField(child=serializers.CharField(), required=False)

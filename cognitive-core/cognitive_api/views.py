@@ -41,6 +41,9 @@ from neuro_symbolic_hybrid import neuro_symbolic_engine, Paradigm
 # Importar conciencia autónoma
 from autonomous_consciousness import autonomous_consciousness
 
+# Importar cliente Ollama para chat
+from ollama_client import OllamaClient
+
 # Inicializar componentes
 if USE_DOCKER_SERVICES:
     cognitive_memory = CognitiveMemory()
@@ -66,6 +69,10 @@ if THEOLOGICAL_MODE:
         )
     else:
         theological_tot = TheologicalToT(ollama_client=ollama_client)
+else:
+    ollama_client = None
+    theological_tot = None
+    knowledge_ingestion = None
 
 
 @api_view(['GET'])
@@ -746,6 +753,46 @@ def set_perception_interval(request):
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def chat_with_agent(request):
+    """Chat directo con el agente usando Ollama"""
+    from cognitive_api.serializers import ChatMessageSerializer
+
+    serializer = ChatMessageSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    data = serializer.validated_data
+
+    try:
+        if ollama_client is None:
+            return Response({
+                "error": "Ollama client not available. Enable THEOLOGICAL_MODE in .env"
+            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        # Generar respuesta usando Ollama directo (sin modo teológico)
+        import asyncio
+
+        async def _generate_response():
+            response = await ollama_client.generate(
+                prompt=data['message'],
+                system_prompt="Eres AutoPlan, un asistente de IA útil y directo. Responde de manera clara, concisa y útil. No repitas información innecesariamente. Sé amigable pero profesional."
+            )
+            return response
+
+        response = asyncio.run(_generate_response())
+
+        return Response({
+            "user_message": data['message'],
+            "agent_response": response,
+            "consciousness_state": autonomous_consciousness.get_consciousness_state(),
+            "timestamp": datetime.now().isoformat()
+        })
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def api_root(request):
@@ -786,3 +833,45 @@ def api_root(request):
         "consciousness_state": autonomous_consciousness.get_consciousness_state(),
         "documentation": "Ver /api/health/ para verificar estado del sistema"
     })
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def chat_simple(request):
+    """Chat simple directo con Ollama"""
+    import asyncio
+    import httpx
+
+    message = request.data.get('message', '')
+
+    if not message:
+        return Response({"error": "Message is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        ollama_host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+        ollama_model = os.getenv("OLLAMA_MODEL", "dolphin-phi:2.7b-v2.6-q4_K_M")
+
+        async def _generate_response():
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(
+                    f"{ollama_host}/api/generate",
+                    json={
+                        "model": ollama_model,
+                        "prompt": message,
+                        "stream": False,
+                        "system": "Eres AutoPlan, un asistente de IA útil y directo. Responde de manera clara, concisa y útil. Sé amigable pero profesional."
+                    }
+                )
+                response.raise_for_status()
+                result = response.json()
+                return result.get("response", "")
+
+        response = asyncio.run(_generate_response())
+
+        return Response({
+            "user_message": message,
+            "agent_response": response,
+            "timestamp": datetime.now().isoformat()
+        })
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
