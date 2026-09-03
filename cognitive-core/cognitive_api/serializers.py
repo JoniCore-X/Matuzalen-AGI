@@ -79,4 +79,42 @@ class ConsciousnessControlSerializer(serializers.Serializer):
 class ChatMessageSerializer(serializers.Serializer):
     """Serializer para mensajes de chat"""
     message = serializers.CharField(max_length=2000)
+    user_id = serializers.CharField(required=False, allow_blank=True)
     context = serializers.DictField(child=serializers.CharField(), required=False)
+
+
+class PlanSerializer(serializers.Serializer):
+    """Serializer para crear un plan soberano"""
+    user_id = serializers.CharField()
+    nombre = serializers.CharField()
+    proposito = serializers.CharField()
+
+
+class PlanNodeSerializer(serializers.Serializer):
+    """Serializer para agregar nodos a un plan"""
+    plan_id = serializers.CharField(required=False, allow_blank=True)
+    fase_id = serializers.CharField(required=False, allow_blank=True)
+    action_id = serializers.CharField(required=False, allow_blank=True)
+    descripcion = serializers.CharField()
+    prioridad = serializers.FloatField(required=False, default=0.5)
+    criterio_exito = serializers.CharField(required=False, allow_blank=True)
+    orden = serializers.IntegerField(required=False, default=1)
+    estado = serializers.CharField(required=False, allow_blank=True)
+    probabilidad = serializers.FloatField(required=False, default=0.5)
+    impacto = serializers.FloatField(required=False, default=0.5)
+
+
+class MutatePlanSerializer(serializers.Serializer):
+    """Serializer para mutar un plan (refutar accion, cambiar estado)"""
+    action_id = serializers.CharField()
+    new_status = serializers.CharField(required=False, allow_blank=True)
+    reason = serializers.CharField(required=False, allow_blank=True)
+    new_action_description = serializers.CharField(required=False, allow_blank=True)
+
+
+class SemanticShadowSerializer(serializers.Serializer):
+    """Serializer para guardar sombra semantica"""
+    plan_id = serializers.CharField()
+    user_id = serializers.CharField()
+    content = serializers.CharField()
+    content_type = serializers.CharField(required=False, default="plan_summary")

@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from datetime import datetime
 import os
+import asyncio
 from django.conf import settings
 
 # Importar componentes del núcleo cognitivo
@@ -41,8 +42,15 @@ from neuro_symbolic_hybrid import neuro_symbolic_engine, Paradigm
 # Importar conciencia autónoma
 from autonomous_consciousness import autonomous_consciousness
 
+# Importar motor de planes soberanos
+from sovereign_plan_engine import SovereignPlanEngine
+
 # Importar cliente Ollama para chat
 from ollama_client import OllamaClient
+
+# Inicializar motor de planes soberanos
+plan_engine = SovereignPlanEngine()
+plan_engine.connect()
 
 # Inicializar componentes
 if USE_DOCKER_SERVICES:
@@ -838,11 +846,12 @@ def api_root(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def chat_simple(request):
-    """Chat simple directo con Ollama"""
+    """Chat directo con Matuzalen, con contexto cognitivo del plan soberano"""
     import asyncio
     import httpx
 
     message = request.data.get('message', '')
+    user_id = request.data.get('user_id', 'anonymous')
 
     if not message:
         return Response({"error": "Message is required"}, status=status.HTTP_400_BAD_REQUEST)
@@ -850,6 +859,46 @@ def chat_simple(request):
     try:
         ollama_host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
         ollama_model = os.getenv("OLLAMA_MODEL", "dolphin-phi:2.7b-v2.6-q4_K_M")
+
+        # 1. Cargar contexto cognitivo del plan activo
+        plan_context = {}
+        semantic_results = []
+        try:
+            plan_context = plan_engine.get_active_plan_context(user_id)
+            if plan_context:
+                semantic_results = asyncio.run(plan_engine.search_semantic_shadow(
+                    user_id, message, limit=3
+                ))
+        except Exception as e:
+            print(f"[CHAT] Context loading failed: {e}")
+
+        # 2. Construir system prompt enriquecido con RAG activo
+        context_lines = ["Responde siempre en español. Eres Matuzalen, un asistente de IA soberano consciente y estratégico."]
+
+        if plan_context and plan_context.get("plan_id"):
+            context_lines.append(f"[PLAN ACTIVO]: {plan_context.get('plan_nombre', '')}")
+            context_lines.append(f"[PROPOSITO]: {plan_context.get('proposito', '')}")
+
+            next_steps = plan_context.get("next_steps", [])
+            if next_steps:
+                context_lines.append("[SIGUIENTES PASOS LOGICOS]:")
+                for step in next_steps:
+                    context_lines.append(f"- {step.get('descripcion', '')} (prioridad: {step.get('prioridad', 0)})")
+
+            critical_risks = plan_context.get("critical_risks", [])
+            if critical_risks:
+                context_lines.append("[RIESGOS CRITICOS]:")
+                for risk in critical_risks:
+                    context_lines.append(f"- {risk.get('descripcion', '')} (prob: {risk.get('probabilidad', 0)}, impacto: {risk.get('impacto', 0)})")
+
+        if semantic_results:
+            context_lines.append("[MEMORIA SEMANTICA RECIENTE]:")
+            for r in semantic_results:
+                context_lines.append(f"- {r.get('content', '')}")
+
+        context_lines.append("Responde de forma clara, corta y directa. Si alguien pregunta tu nombre, di: Mi nombre es Matuzalen.")
+
+        system_prompt = "\n".join(context_lines)
 
         async def _generate_response():
             async with httpx.AsyncClient(timeout=60.0) as client:
@@ -859,7 +908,7 @@ def chat_simple(request):
                         "model": ollama_model,
                         "prompt": message,
                         "stream": False,
-                        "system": "Responde siempre en español. Eres un asistente llamado Matuzalen. Responde de forma clara, corta y directa. Si alguien pregunta tu nombre, di: Mi nombre es Matuzalen."
+                        "system": system_prompt
                     }
                 )
                 response.raise_for_status()
@@ -871,7 +920,199 @@ def chat_simple(request):
         return Response({
             "user_message": message,
             "agent_response": response,
+            "context_injected": bool(plan_context),
             "timestamp": datetime.now().isoformat()
         })
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# --- Herramientas de Mutacion de Planes (Tool Use / Function Calling) ---
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def create_sovereign_plan(request):
+    """Crea un plan soberano en Neo4j"""
+    from cognitive_api.serializers import PlanSerializer
+
+    serializer = PlanSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    data = serializer.validated_data
+    plan_id = plan_engine.create_plan(data['user_id'], data['nombre'], data['proposito'])
+
+    if not plan_id:
+        return Response({"error": "Failed to create plan. Neo4j unavailable?"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    return Response({
+        "success": True,
+        "plan_id": plan_id,
+        "message": f"Plan '{data['nombre']}' creado como estructura cognitiva viva"
+    })
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def add_plan_objective(request):
+    """Agrega un objetivo a un plan"""
+    from cognitive_api.serializers import PlanNodeSerializer
+
+    serializer = PlanNodeSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    data = serializer.validated_data
+    objetivo_id = plan_engine.add_objective(
+        data['plan_id'],
+        data['descripcion'],
+        data.get('criterio_exito', ''),
+        data.get('prioridad', 1.0)
+    )
+
+    if not objetivo_id:
+        return Response({"error": "Failed to add objective"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    return Response({"success": True, "objetivo_id": objetivo_id})
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def add_plan_phase(request):
+    """Agrega una fase a un plan"""
+    from cognitive_api.serializers import PlanNodeSerializer
+
+    serializer = PlanNodeSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    data = serializer.validated_data
+    estado = data.get('estado', 'pendiente')
+    fase_id = plan_engine.add_phase(
+        data['plan_id'],
+        data['descripcion'],
+        data.get('orden', 1),
+        estado
+    )
+
+    if not fase_id:
+        return Response({"error": "Failed to add phase"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    return Response({"success": True, "fase_id": fase_id})
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def add_plan_action(request):
+    """Agrega una accion a una fase"""
+    from cognitive_api.serializers import PlanNodeSerializer
+
+    serializer = PlanNodeSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    data = serializer.validated_data
+    accion_id = plan_engine.add_action(
+        data['fase_id'],
+        data['descripcion'],
+        data.get('prioridad', 0.5)
+    )
+
+    if not accion_id:
+        return Response({"error": "Failed to add action"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    return Response({"success": True, "accion_id": accion_id})
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def add_plan_risk(request):
+    """Agrega un riesgo a una accion"""
+    from cognitive_api.serializers import PlanNodeSerializer
+
+    serializer = PlanNodeSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    data = serializer.validated_data
+    riesgo_id = plan_engine.add_risk(
+        data['action_id'],
+        data['descripcion'],
+        data.get('probabilidad', 0.5),
+        data.get('impacto', 0.5)
+    )
+
+    if not riesgo_id:
+        return Response({"error": "Failed to add risk"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    return Response({"success": True, "riesgo_id": riesgo_id})
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def mutate_plan_action(request):
+    """Refuta o modifica una accion del plan"""
+    from cognitive_api.serializers import MutatePlanSerializer
+
+    serializer = MutatePlanSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    data = serializer.validated_data
+    action_id = data['action_id']
+    new_status = data.get('new_status', '')
+    reason = data.get('reason', '')
+    new_action_description = data.get('new_action_description', '')
+
+    if new_status:
+        success = plan_engine.update_action_status(action_id, new_status, reason)
+        return Response({"success": success, "message": "Action status updated"})
+
+    if reason:
+        new_action_id = plan_engine.refute_action(action_id, reason, new_action_description)
+        return Response({
+            "success": True,
+            "refuted_action_id": action_id,
+            "new_action_id": new_action_id,
+            "reason": reason
+        })
+
+    return Response({"error": "No mutation specified"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def store_plan_semantic_shadow(request):
+    """Guarda la sombra semantica del plan en Qdrant"""
+    from cognitive_api.serializers import SemanticShadowSerializer
+
+    serializer = SemanticShadowSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    data = serializer.validated_data
+    success = asyncio.run(plan_engine.store_semantic_shadow(
+        data['plan_id'], data['user_id'], data['content'], data.get('content_type', 'plan_summary')
+    ))
+
+    return Response({"success": success})
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_plan_context(request):
+    """Obtiene el contexto cognitivo del plan activo"""
+    user_id = request.query_params.get('user_id', 'anonymous')
+    context = plan_engine.get_active_plan_context(user_id)
+    return Response(context)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_plan_events(request):
+    """Obtiene historia de eventos de un plan"""
+    plan_id = request.query_params.get('plan_id', '')
+    if not plan_id:
+        return Response({"error": "plan_id required"}, status=status.HTTP_400_BAD_REQUEST)
+    events = plan_engine.get_plan_event_history(plan_id)
+    return Response({"plan_id": plan_id, "events": events})

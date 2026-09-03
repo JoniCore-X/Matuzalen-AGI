@@ -43,4 +43,15 @@ urlpatterns = [
     # Chat with agent
     path('chat', views.chat_with_agent, name='chat_with_agent'),
     path('chat/simple', views.chat_simple, name='chat_simple'),
+
+    # Sovereign plan tools (Tool Use / Function Calling)
+    path('plan/create', views.create_sovereign_plan, name='create_sovereign_plan'),
+    path('plan/objective', views.add_plan_objective, name='add_plan_objective'),
+    path('plan/phase', views.add_plan_phase, name='add_plan_phase'),
+    path('plan/action', views.add_plan_action, name='add_plan_action'),
+    path('plan/risk', views.add_plan_risk, name='add_plan_risk'),
+    path('plan/mutate', views.mutate_plan_action, name='mutate_plan_action'),
+    path('plan/semantic', views.store_plan_semantic_shadow, name='store_plan_semantic_shadow'),
+    path('plan/context', views.get_plan_context, name='get_plan_context'),
+    path('plan/events', views.get_plan_events, name='get_plan_events'),
 ]
