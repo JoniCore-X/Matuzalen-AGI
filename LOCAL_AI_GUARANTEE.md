@@ -1,8 +1,8 @@
-# Garantía de IA 100% Local - AutoPlan
+# Garantía de IA 100% Local - Matuzalen AGI
 
 ## Confirmación de Soberanía Cognitiva
 
-AutoPlan garantiza que **toda la inteligencia artificial es 100% local y propia**, sin dependencias de APIs externas.
+Matuzalen AGI garantiza que **toda la inteligencia artificial es 100% local y propia**, sin dependencias de APIs externas.
 
 ## Componentes Locales Verificados
 
@@ -105,7 +105,7 @@ EMBEDDING_DIMENSION=768
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│         AutoPlan - IA 100% Local y Soberana                 │
+│         Matuzalen AGI - IA 100% Local y Soberana                 │
 ├─────────────────────────────────────────────────────────────┤
 │                                                               │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
@@ -200,4 +200,4 @@ curl http://localhost:7474/               # ✅ Debe funcionar
 ✅ **Anti-Alucinaciones**: 100% local (Validación)
 ✅ **API REST**: 100% local (Django)
 
-**AutoPlan es un sistema cognitivo soberano, completamente local, sin dependencias de APIs externas.**
+**Matuzalen AGI es un sistema cognitivo soberano, completamente local, sin dependencias de APIs externas.**

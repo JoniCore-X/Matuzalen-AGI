@@ -1,8 +1,8 @@
-# Arquitectura Neuro-Simbólica Híbrida - AutoPlan AGI
+# Arquitectura Neuro-Simbólica Híbrida - Matuzalen AGI AGI
 
 ## Visión General
 
-AutoPlan ha evolucionado a una arquitectura cognitiva neuro-simbólica que integra todos los paradigmas clásicos y modernos de IA en un sistema unificado, sin alucinaciones y con determinismo garantizado donde sea posible.
+Matuzalen AGI ha evolucionado a una arquitectura cognitiva neuro-simbólica que integra todos los paradigmas clásicos y modernos de IA en un sistema unificado, sin alucinaciones y con determinismo garantizado donde sea posible.
 
 ## Paradigmas Implementados
 
@@ -298,7 +298,7 @@ curl -X POST http://localhost:8000/api/neuro-symbolic/knowledge \
 
 ## Conclusión
 
-AutoPlan ahora es un sistema cognitivo neuro-simbólico que combina lo mejor de la IA clásica y moderna:
+Matuzalen AGI ahora es un sistema cognitivo neuro-simbólico que combina lo mejor de la IA clásica y moderna:
 
 - **IA Clásica**: Lógica simbólica, algoritmos deterministas, sistemas expertos
 - **IA Moderna**: Deep Learning, LLM, embeddings, grafos

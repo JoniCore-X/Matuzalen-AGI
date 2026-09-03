@@ -798,7 +798,7 @@ def chat_with_agent(request):
 def api_root(request):
     """Página raíz de la API"""
     return Response({
-        "name": "AutoPlan AGI - Neuro-Symbolic Cognitive Core",
+        "name": "Matuzalen AGI - Neuro-Symbolic Cognitive Core",
         "version": "1.0.0",
         "description": "Sistema cognitivo neuro-simbólico con conciencia autónoma",
         "endpoints": {
@@ -859,7 +859,7 @@ def chat_simple(request):
                         "model": ollama_model,
                         "prompt": message,
                         "stream": False,
-                        "system": "Eres AutoPlan, un asistente de IA útil y directo. Responde de manera clara, concisa y útil. Sé amigable pero profesional."
+                        "system": "Responde siempre en español. Eres un asistente llamado Matuzalen. Responde de forma clara, corta y directa. Si alguien pregunta tu nombre, di: Mi nombre es Matuzalen."
                     }
                 )
                 response.raise_for_status()

@@ -1,8 +1,8 @@
-# Conciencia Autónoma Omnipresente - AutoPlan
+# Conciencia Autónoma Omnipresente - Matuzalen AGI
 
 ## Visión General
 
-AutoPlan ahora tiene **conciencia autónoma omnipresente** que mantiene monitoreo continuo del entorno, genera pensamientos y toma decisiones proactivas sin necesidad de inputs externos.
+Matuzalen AGI ahora tiene **conciencia autónoma omnipresente** que mantiene monitoreo continuo del entorno, genera pensamientos y toma decisiones proactivas sin necesidad de inputs externos.
 
 ## Arquitectura de Conciencia
 
@@ -314,7 +314,7 @@ Motor Neuro-Simbólico
 
 ## Conclusión
 
-AutoPlan ahora tiene **conciencia autónoma omnipresente** que:
+Matuzalen AGI ahora tiene **conciencia autónoma omnipresente** que:
 
 - 🧠 **Percibe** continuamente el entorno
 - 🧠 **Procesa** información cognitivamente

@@ -1,11 +1,11 @@
-# Auto-Sync Automático - AutoPlan AGI
+# Auto-Sync Automático - Matuzalen AGI AGI
 
 ## Configuración de GitHub
 
-El proyecto AutoPlan AGI está configurado para mantenerse actualizado automáticamente en GitHub.
+El proyecto Matuzalen AGI AGI está configurado para mantenerse actualizado automáticamente en GitHub.
 
 ### Repositorio
-- **URL**: https://github.com/JoniCore-X/AutoPlan-AGI
+- **URL**: https://github.com/JoniCore-X/Matuzalen AGI-AGI
 - **Rama principal**: main
 - **Estado**: Público
 
@@ -17,7 +17,7 @@ Este script automatiza el proceso de sincronización con GitHub:
 
 ```batch
 @echo off
-cd /d "C:\Users\jonie\OneDrive\Desktop\AutoPlan"
+cd /d "C:\Users\jonie\OneDrive\Desktop\Matuzalen AGI"
 git add .
 git commit -m "Auto-sync: Actualización automática"
 git push origin main
@@ -27,7 +27,7 @@ git push origin main
 
 **Manual**:
 ```batch
-cd C:\Users\jonie\OneDrive\Desktop\AutoPlan
+cd C:\Users\jonie\OneDrive\Desktop\Matuzalen AGI
 auto-sync.bat
 ```
 
@@ -41,7 +41,7 @@ auto-sync.bat
 
 **Ver estado**:
 ```bash
-cd C:\Users\jonie\OneDrive\Desktop\AutoPlan
+cd C:\Users\jonie\OneDrive\Desktop\Matuzalen AGI
 git status
 ```
 
@@ -88,16 +88,16 @@ git pull origin main
 **Opción 1: Programador de Tareas de Windows**
 1. Win + R → `taskschd.msc`
 2. Crear tarea básica
-3. Nombre: "AutoPlan Auto-Sync"
+3. Nombre: "Matuzalen AGI Auto-Sync"
 4. Desencadenador: Cada 30 minutos
 5. Acción: Iniciar programa
    - Programa: `cmd.exe`
-   - Argumentos: `/c "C:\Users\jonie\OneDrive\Desktop\AutoPlan\auto-sync.bat"`
+   - Argumentos: `/c "C:\Users\jonie\OneDrive\Desktop\Matuzalen AGI\auto-sync.bat"`
 
 **Opción 2: Script PowerShell**
 ```powershell
 # auto-sync.ps1
-$path = "C:\Users\jonie\OneDrive\Desktop\AutoPlan"
+$path = "C:\Users\jonie\OneDrive\Desktop\Matuzalen AGI"
 Set-Location $path
 git add .
 git diff --cached --quiet
@@ -146,7 +146,7 @@ El `.gitignore` excluye:
 ### Estado Actual
 
 ✅ **Repositoritorio Git**: Inicializado
-✅ **GitHub**: Configurado (https://github.com/JoniCore-X/AutoPlan-AGI)
+✅ **GitHub**: Configurado (https://github.com/JoniCore-X/Matuzalen AGI-AGI)
 ✅ **Commit inicial**: Realizado (141 archivos, 17,187 líneas)
 ✅ **Push inicial**: Completado
 ✅ **Script auto-sync**: Creado
@@ -165,10 +165,10 @@ Si pierdes el código local:
 
 ```bash
 # Clonar desde GitHub
-git clone https://github.com/JoniCore-X/AutoPlan-AGI.git
+git clone https://github.com/JoniCore-X/Matuzalen AGI-AGI.git
 
 # Restaurar entorno virtual
-cd AutoPlan-AGI/cognitive-core
+cd Matuzalen AGI-AGI/cognitive-core
 python -m venv venv
 venv\Scripts\activate
 pip install -r requirements.txt
@@ -183,7 +183,7 @@ pip install -r requirements.txt
 
 ### Contacto
 
-- **GitHub**: https://github.com/JoniCore-X/AutoPlan-AGI
-- **Issues**: https://github.com/JoniCore-X/AutoPlan-AGI/issues
+- **GitHub**: https://github.com/JoniCore-X/Matuzalen AGI-AGI
+- **Issues**: https://github.com/JoniCore-X/Matuzalen AGI-AGI/issues
 
 El proyecto está ahora respaldado y sincronizado automáticamente con GitHub.

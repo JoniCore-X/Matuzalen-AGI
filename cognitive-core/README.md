@@ -9,7 +9,7 @@ Sistema cognitivo distribuido que implementa memoria vectorial, grafo de conocim
 1. **Memoria Cognitiva (Qdrant)** - Base de datos vectorial para RAG
 2. **Grafo de Conocimiento (Neo4j)** - Sistema de relaciones y entidades
 3. **Motor de Razonamiento** - Procesamiento cognitivo y toma de decisiones
-4. **API FastAPI** - Interfaz de comunicación con AutoPlan
+4. **API FastAPI** - Interfaz de comunicación con Matuzalen AGI
 
 ### Stack Tecnológico
 
@@ -78,9 +78,9 @@ POST /knowledge/store
 Content-Type: application/json
 
 {
-  "content": "El proyecto AutoPlan implementa planificación autónoma",
+  "content": "El proyecto Matuzalen AGI implementa planificación autónoma",
   "type": "project_knowledge",
-  "metadata": {"project": "AutoPlan", "category": "documentation"}
+  "metadata": {"project": "Matuzalen AGI", "category": "documentation"}
 }
 ```
 
@@ -89,7 +89,7 @@ Content-Type: application/json
 GET /knowledge/search?query=planificación autónoma&limit=5
 ```
 
-## Integración con AutoPlan
+## Integración con Matuzalen AGI
 
 El cliente cognitivo en `backend/cognitive-client.ts` se comunica con este servicio:
 

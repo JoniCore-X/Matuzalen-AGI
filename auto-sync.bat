@@ -1,10 +1,10 @@
 @echo off
-REM Auto-Sync Script for AutoPlan AGI
+REM Auto-Sync Script for Matuzalen AGI AGI
 REM Este script mantiene el proyecto actualizado en GitHub automáticamente
 
-echo [%date% %time%] Iniciando auto-sync de AutoPlan AGI...
+echo [%date% %time%] Iniciando auto-sync de Matuzalen AGI AGI...
 
-cd /d "C:\Users\jonie\OneDrive\Desktop\AutoPlan"
+cd /d "C:\Users\jonie\OneDrive\Desktop\Matuzalen AGI"
 
 REM Agregar todos los cambios
 echo [%date% %time%] Agregando archivos al staging area...
