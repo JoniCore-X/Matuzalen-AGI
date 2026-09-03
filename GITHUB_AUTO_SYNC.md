@@ -17,7 +17,7 @@ Este script automatiza el proceso de sincronización con GitHub:
 
 ```batch
 @echo off
-cd /d "C:\Users\jonie\OneDrive\Desktop\Matuzalen AGI"
+cd /d "C:\Users\jonie\OneDrive\Desktop\Matuzalen-AGI"
 git add .
 git commit -m "Auto-sync: Actualización automática"
 git push origin main
@@ -27,7 +27,7 @@ git push origin main
 
 **Manual**:
 ```batch
-cd C:\Users\jonie\OneDrive\Desktop\Matuzalen AGI
+cd C:\Users\jonie\OneDrive\Desktop\Matuzalen-AGI
 auto-sync.bat
 ```
 
@@ -41,7 +41,7 @@ auto-sync.bat
 
 **Ver estado**:
 ```bash
-cd C:\Users\jonie\OneDrive\Desktop\Matuzalen AGI
+cd C:\Users\jonie\OneDrive\Desktop\Matuzalen-AGI
 git status
 ```
 
@@ -92,12 +92,12 @@ git pull origin main
 4. Desencadenador: Cada 30 minutos
 5. Acción: Iniciar programa
    - Programa: `cmd.exe`
-   - Argumentos: `/c "C:\Users\jonie\OneDrive\Desktop\Matuzalen AGI\auto-sync.bat"`
+   - Argumentos: `/c "C:\Users\jonie\OneDrive\Desktop\Matuzalen-AGI\auto-sync.bat"`
 
 **Opción 2: Script PowerShell**
 ```powershell
 # auto-sync.ps1
-$path = "C:\Users\jonie\OneDrive\Desktop\Matuzalen AGI"
+$path = "C:\Users\jonie\OneDrive\Desktop\Matuzalen-AGI"
 Set-Location $path
 git add .
 git diff --cached --quiet

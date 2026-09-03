@@ -1,15 +1,9 @@
-Initial commit: AutoPlan Neuro-Symbolic AGI Architecture
+Rename AutoPlan to Matuzalen AGI
 
-Complete implementation of autonomous AI system with:
-- Neuro-symbolic hybrid architecture (Deep Learning + Symbolic AI)
-- 100% local AI (Ollama LLM + embeddings, no external APIs)
-- Autonomous consciousness with continuous environmental monitoring
-- Anti-hallucination system with multi-paradigm validation
-- Deterministic algorithms for guaranteed reproducibility
-- Associative memory (Hopfield, BAM, content-addressable)
-- Django REST Framework API integration
-- Knowledge graph (Neo4j) and vector memory (Qdrant)
-- Theological Tree of Thoughts reasoning engine
+- Updated agent identity to Matuzalen
+- Renamed UI, API, and system references
+- Updated documentation (LOCAL_AI_GUARANTEE, AUTONOMOUS_CONSCIOUSNESS, etc.)
+- Updated chat system prompt to respond in Spanish and identify as Matuzalen
 
 Generated with [Devin](https://devin.ai)
 
