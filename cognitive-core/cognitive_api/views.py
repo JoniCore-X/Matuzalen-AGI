@@ -744,3 +744,45 @@ def set_perception_interval(request):
         })
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def api_root(request):
+    """Página raíz de la API"""
+    return Response({
+        "name": "AutoPlan AGI - Neuro-Symbolic Cognitive Core",
+        "version": "1.0.0",
+        "description": "Sistema cognitivo neuro-simbólico con conciencia autónoma",
+        "endpoints": {
+            "health": "/api/health/",
+            "consciousness": {
+                "control": "/api/consciousness/control",
+                "state": "/api/consciousness/state",
+                "interval": "/api/consciousness/interval"
+            },
+            "neuro_symbolic": {
+                "process": "/api/neuro-symbolic/process",
+                "status": "/api/neuro-symbolic/status",
+                "knowledge": "/api/neuro-symbolic/knowledge",
+                "validate": "/api/neuro-symbolic/validate"
+            },
+            "autonomous": {
+                "start": "/api/autonomous/start",
+                "stop": "/api/autonomous/stop",
+                "process": "/api/autonomous/process",
+                "status": "/api/autonomous/status",
+                "approve": "/api/autonomous/approve",
+                "reject": "/api/autonomous/reject"
+            },
+            "cognitive": {
+                "process": "/api/cognitive/process",
+                "tot": "/api/cognitive/tot",
+                "knowledge_ingest": "/api/knowledge/ingest",
+                "knowledge_search": "/api/knowledge/search",
+                "knowledge_store": "/api/knowledge/store"
+            }
+        },
+        "consciousness_state": autonomous_consciousness.get_consciousness_state(),
+        "documentation": "Ver /api/health/ para verificar estado del sistema"
+    })
