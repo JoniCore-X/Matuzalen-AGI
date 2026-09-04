@@ -1,7 +1,17 @@
 /*
 Matuzalen AGI - Rust Sovereign Authentication Service
-Capa de Identidad y Soberania para un AGI estrategico y teologico.
-No es un CRUD de contabilidad. Es el reconocimiento de soberania.
+Capa de Identidad y Soberania: reconocimiento de autoridad sin contraseñas.
+
+Modulos profesionales implementados:
+- WebAuthn/FIDO2 Handler
+- Challenge Generator (nonces criptograficos anti-replay)
+- Assertion Verifier (estructura para validacion ECDSA P-256)
+- Device Fingerprinting
+- JWT con tokens de corta duracion + refresh
+
+ADVERTENCIA: La verificacion ECDSA real requiere integrar la public_key del
+authenticator y validar la firma con p256/ecdsa. Aqui se simula el flujo
+completo para permitir pruebas de integracion sin hardware FIDO2.
 */
 
 use axum::{
@@ -13,6 +23,7 @@ use axum::{
 };
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+// use p256::ecdsa::{Signature, VerifyingKey};
 use rand::{Rng, RngCore};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -24,17 +35,42 @@ use uuid::Uuid;
 // --- Tipos de datos ---
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-struct PasskeyChallenge {
-    challenge: String,
-    user_id: String,
+struct PublicKeyCredential {
+    credential_id: String,
+    public_key_der: Vec<u8>,
+    counter: u32,
+    aaguid: String,
+    transports: Vec<String>,
+    device_fingerprint: String,
+    created_at: i64,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-struct PasskeyAssertion {
-    user_id: String,
+struct PasskeyChallenge {
     challenge: String,
+    user_id: String,
+    origin: String,
+    created_at: i64,
+    operation: String, // "register" o "login"
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct FidoRegistration {
+    user_id: String,
     credential_id: String,
+    client_data_json: String,
+    attestation_object: String,
+    device_fingerprint: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct FidoAssertion {
+    user_id: String,
+    credential_id: String,
+    client_data_json: String,
+    authenticator_data: String,
     signature: String,
+    device_fingerprint: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -72,18 +108,37 @@ struct RefreshTokenRecord {
     expires_at: i64,
 }
 
-// --- Estado global en memoria (para demo; usar Redis en produccion) ---
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct RegistrationOptions {
+    rp: HashMap<String, String>,
+    user: HashMap<String, String>,
+    challenge: String,
+    pub_key_cred_params: Vec<HashMap<String, i32>>,
+    authenticator_selection: HashMap<String, String>,
+    timeout: u32,
+    attestation: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct AssertionOptions {
+    challenge: String,
+    allow_credentials: Vec<HashMap<String, String>>,
+    user_verification: String,
+    timeout: u32,
+    rp_id: String,
+}
+
+// --- Estado global en memoria (para demo; usar Redis/DB en produccion) ---
 
 type ChallengeStore = Arc<RwLock<HashMap<String, PasskeyChallenge>>>;
-type UserPasskeys = Arc<RwLock<HashMap<String, Vec<String>>>>;
+type CredentialStore = Arc<RwLock<HashMap<String, Vec<PublicKeyCredential>>>>;
 type RefreshTokens = Arc<RwLock<HashMap<String, RefreshTokenRecord>>>;
 
 #[derive(Clone)]
 struct AuthState {
     challenges: ChallengeStore,
-    passkeys: UserPasskeys,
+    credentials: CredentialStore,
     refresh_tokens: RefreshTokens,
-    encoding_key: EncodingKey,
     decoding_key: DecodingKey,
 }
 
@@ -92,8 +147,12 @@ struct AuthState {
 const JWT_SECRET: &[u8] = b"matuzalen_sovereign_jwt_secret_change_in_production";
 const ACCESS_TOKEN_TTL_MINUTES: i64 = 15;
 const REFRESH_TOKEN_TTL_DAYS: i64 = 7;
+const CHALLENGE_TTL_SECONDS: i64 = 120;
+const RP_ID: &str = "localhost";
+const RP_NAME: &str = "Matuzalen AGI";
+const ORIGIN: &str = "http://localhost:8000";
 
-// --- Helpers ---
+// --- Helpers criptograficos ---
 
 fn hash_token(token: &str) -> String {
     let mut hasher = Sha256::new();
@@ -105,11 +164,18 @@ fn hash_token(token: &str) -> String {
 fn generate_random_challenge() -> String {
     let mut bytes = [0u8; 32];
     rand::thread_rng().fill_bytes(&mut bytes);
-    hex::encode(bytes)
+    base64::encode_config(&bytes, base64::URL_SAFE_NO_PAD)
+}
+
+fn now_timestamp() -> i64 {
+    Utc::now().timestamp()
+}
+
+fn is_expired(created_at: i64, ttl_seconds: i64) -> bool {
+    now_timestamp() - created_at > ttl_seconds
 }
 
 fn build_cognitive_payload(user_id: &str) -> CognitivePayload {
-    // En produccion, esto sale de Redis / Neo4j / Qdrant
     let mut rng = rand::thread_rng();
     let vector: Vec<f32> = (0..768).map(|_| rng.gen::<f32>() * 2.0 - 1.0).collect();
 
@@ -153,77 +219,464 @@ fn issue_tokens(user_id: &str, identity_node: &str, clearance: &str) -> (String,
     (access_token, refresh_token)
 }
 
-// --- Handlers ---
+// --- Device Fingerprinting ---
 
-async fn challenge(
-    State(state): axum::extract::State<AuthState>,
-    Json(req): Json<HashMap<String, String>>,
-) -> Result<Json<HashMap<String, String>>, (StatusCode, String)> {
-    let user_id = req.get("user_id").cloned().unwrap_or_else(|| Uuid::new_v4().to_string());
-    let challenge_str = generate_random_challenge();
+fn compute_device_fingerprint(headers: &HeaderMap, user_id: &str) -> String {
+    let ua = headers
+        .get("user-agent")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("unknown");
+    let lang = headers
+        .get("accept-language")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("unknown");
+    let ip = headers
+        .get("x-forwarded-for")
+        .or_else(|| headers.get("x-real-ip"))
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("127.0.0.1");
 
-    let challenge = PasskeyChallenge {
-        challenge: challenge_str.clone(),
-        user_id: user_id.clone(),
-    };
-
-    state.challenges.write().await.insert(challenge_str.clone(), challenge);
-
-    let mut resp = HashMap::new();
-    resp.insert("challenge".to_string(), challenge_str);
-    resp.insert("user_id".to_string(), user_id);
-    Ok(Json(resp))
+    let combined = format!("{}:{}:{}:{}", user_id, ua, lang, ip);
+    hash_token(&combined)[..24].to_string()
 }
 
-async fn login(
-    State(state): axum::extract::State<AuthState>,
-    Json(assertion): Json<PasskeyAssertion>,
-) -> Result<Json<TokenPair>, (StatusCode, String)> {
-    // 1. Verificar que el reto exista
-    let challenge = {
-        let store = state.challenges.read().await;
-        store.get(&assertion.challenge).cloned()
-    };
+fn verify_device_fingerprint(stored: &str, current: &str) -> Result<(), String> {
+    // En produccion: permitir variacion controlada, no exigir identidad exacta
+    if stored != current {
+        return Err("Device fingerprint mismatch".to_string());
+    }
+    Ok(())
+}
 
-    let _challenge = match challenge {
-        Some(c) if c.user_id == assertion.user_id => c,
-        _ => return Err((StatusCode::UNAUTHORIZED, "Invalid or expired challenge".to_string())),
-    };
+// --- WebAuthn / FIDO2 Verifier ---
 
-    // 2. Simular validacion criptografica FIDO2/WebAuthn
-    // En produccion: usar webauthn-rs, validar firma y contador.
-    let expected_signature = hash_token(&format!("{}:{}", assertion.credential_id, assertion.challenge));
-    if !assertion.signature.starts_with(&expected_signature[..8]) && !assertion.signature.len() > 16 {
-        // Demo: aceptamos cualquier firma no vacia larga para facilitar pruebas
+fn decode_base64url(input: &str) -> Result<Vec<u8>, String> {
+    base64::decode_config(input, base64::URL_SAFE_NO_PAD)
+        .or_else(|_| base64::decode_config(input, base64::URL_SAFE))
+        .or_else(|_| base64::decode_config(input, base64::STANDARD))
+        .map_err(|_| "Invalid base64url".to_string())
+}
+
+fn sha256_bytes(data: &[u8]) -> Vec<u8> {
+    let mut hasher = Sha256::new();
+    hasher.update(data);
+    hasher.finalize().to_vec()
+}
+
+fn parse_client_data_json(client_data_json: &str) -> Result<HashMap<String, serde_json::Value>, String> {
+    let bytes = decode_base64url(client_data_json)?;
+    let text = String::from_utf8(bytes).map_err(|_| "Invalid UTF-8 in clientDataJSON")?;
+    let parsed: HashMap<String, serde_json::Value> = serde_json::from_str(&text)
+        .map_err(|_| "Invalid clientDataJSON JSON")?;
+    Ok(parsed)
+}
+
+fn validate_challenge(client_data: &HashMap<String, serde_json::Value>, expected: &str) -> Result<(), String> {
+    let challenge_b64 = client_data
+        .get("challenge")
+        .and_then(|v| v.as_str())
+        .ok_or("Missing challenge")?;
+
+    let decoded = decode_base64url(challenge_b64)?;
+    let expected_decoded = decode_base64url(expected)?;
+
+    if decoded != expected_decoded {
+        return Err("Challenge mismatch".to_string());
+    }
+    Ok(())
+}
+
+fn validate_origin(client_data: &HashMap<String, serde_json::Value>) -> Result<(), String> {
+    let origin = client_data
+        .get("origin")
+        .and_then(|v| v.as_str())
+        .ok_or("Missing origin")?;
+    if origin != ORIGIN {
+        return Err("Origin mismatch".to_string());
+    }
+    Ok(())
+}
+
+fn validate_rp_id(authenticator_data: &[u8]) -> Result<(), String> {
+    if authenticator_data.len() < 37 {
+        return Err("Invalid authenticator data length".to_string());
+    }
+    let rp_id_hash = &authenticator_data[0..32];
+    let expected_hash = sha256_bytes(RP_ID.as_bytes());
+    if rp_id_hash != expected_hash {
+        return Err("rpId hash mismatch".to_string());
+    }
+    Ok(())
+}
+
+fn check_user_flags(authenticator_data: &[u8]) -> Result<(), String> {
+    if authenticator_data.len() < 33 {
+        return Err("Authenticator data too short".to_string());
+    }
+    let flags = authenticator_data[32];
+    let user_present = flags & 0x01 != 0;
+    let user_verified = flags & 0x04 != 0;
+
+    if !user_present {
+        return Err("User not present".to_string());
+    }
+    if !user_verified {
+        return Err("User not verified".to_string());
+    }
+    Ok(())
+}
+
+fn verify_signature(
+    _public_key: &[u8],
+    _authenticator_data: &[u8],
+    _client_data_hash: &[u8],
+    _signature: &[u8],
+) -> Result<(), String> {
+    // En produccion real:
+    // 1. Parsear public_key DER y crear VerifyingKey de p256
+    // 2. Concatenar authenticator_data + client_data_hash
+    // 3. Verificar Signature con VerifyingKey
+    //
+    // Para demo sin hardware FIDO2: se acepta como valida si los
+    // parametros tienen longitud razonable. Integrar p256 real antes
+    // de desplegar.
+
+    if _public_key.len() < 32 {
+        return Err("Invalid public key length".to_string());
+    }
+    if _signature.len() < 32 {
+        return Err("Invalid signature length".to_string());
     }
 
-    // 3. Registrar passkey si es nueva
+    // NOTA: El siguiente bloque es un placeholder. Activar cuando se
+    // disponga de credenciales reales generadas por un authenticator.
+    // let vk = VerifyingKey::from_sec1_bytes(_public_key).map_err(|_| "Invalid public key")?;
+    // let sig = Signature::from_der(_signature).map_err(|_| "Invalid signature")?;
+    // let signed = [_authenticator_data, _client_data_hash].concat();
+    // vk.verify(&signed, &sig).map_err(|_| "Invalid signature")?;
+
+    Ok(())
+}
+
+// --- Handlers ---
+
+async fn register_begin(
+    State(state): State<AuthState>,
+    headers: HeaderMap,
+    Json(req): Json<HashMap<String, String>>,
+) -> Result<Json<RegistrationOptions>, (StatusCode, String)> {
+    let user_id = req.get("user_id").cloned().unwrap_or_else(|| Uuid::new_v4().to_string());
+    let challenge = generate_random_challenge();
+    let _fingerprint = compute_device_fingerprint(&headers, &user_id);
+
+    state.challenges.write().await.insert(challenge.clone(), PasskeyChallenge {
+        challenge: challenge.clone(),
+        user_id: user_id.clone(),
+        origin: ORIGIN.to_string(),
+        created_at: now_timestamp(),
+        operation: "register".to_string(),
+    });
+
+    let mut rp = HashMap::new();
+    rp.insert("name".to_string(), RP_NAME.to_string());
+    rp.insert("id".to_string(), RP_ID.to_string());
+
+    let mut user = HashMap::new();
+    user.insert("id".to_string(), base64::encode_config(user_id.as_bytes(), base64::URL_SAFE_NO_PAD));
+    user.insert("name".to_string(), user_id.clone());
+    user.insert("displayName".to_string(), user_id.clone());
+
+    let mut pub_key_params = HashMap::new();
+    pub_key_params.insert("type".to_string(), 1); // public-key
+    pub_key_params.insert("alg".to_string(), -7); // ES256
+
+    let mut auth_select = HashMap::new();
+    auth_select.insert("authenticatorAttachment".to_string(), "platform".to_string());
+    auth_select.insert("userVerification".to_string(), "required".to_string());
+    auth_select.insert("residentKey".to_string(), "preferred".to_string());
+
+    let options = RegistrationOptions {
+        rp,
+        user,
+        challenge: challenge.clone(),
+        pub_key_cred_params: vec![pub_key_params],
+        authenticator_selection: auth_select,
+        timeout: 120000,
+        attestation: "none".to_string(),
+    };
+
+    Ok(Json(options))
+}
+
+async fn register_finish(
+    State(state): State<AuthState>,
+    headers: HeaderMap,
+    Json(req): Json<FidoRegistration>,
+) -> Result<Json<HashMap<String, String>>, (StatusCode, String)> {
+    // 1. Decodificar clientDataJSON y validar challenge, origin
+    let client_data = parse_client_data_json(&req.client_data_json)
+        .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
+
+    let challenge_str = client_data
+        .get("challenge")
+        .and_then(|v| v.as_str())
+        .ok_or((StatusCode::BAD_REQUEST, "Missing challenge".to_string()))?;
+
+    let stored = {
+        let store = state.challenges.read().await;
+        store.get(challenge_str).cloned()
+    };
+
+    let stored = stored.ok_or((StatusCode::UNAUTHORIZED, "Invalid or expired challenge".to_string()))?;
+
+    if is_expired(stored.created_at, CHALLENGE_TTL_SECONDS) {
+        state.challenges.write().await.remove(challenge_str);
+        return Err((StatusCode::UNAUTHORIZED, "Challenge expired".to_string()));
+    }
+
+    validate_challenge(&client_data, &stored.challenge)
+        .map_err(|e| (StatusCode::UNAUTHORIZED, e))?;
+    validate_origin(&client_data)
+        .map_err(|e| (StatusCode::UNAUTHORIZED, e))?;
+
+    // 2. Extraer public_key del attestation object (simplificado)
+    // En produccion: parsear CBOR attestationObject, verificar attestation si aplica,
+    // extraer credentialPublicKey.
+    let public_key = decode_base64url(&req.attestation_object)
+        .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid attestation".to_string()))?;
+
+    let credential = PublicKeyCredential {
+        credential_id: req.credential_id.clone(),
+        public_key_der: public_key,
+        counter: 0,
+        aaguid: "00000000-0000-0000-0000-000000000000".to_string(),
+        transports: vec!["internal".to_string()],
+        device_fingerprint: compute_device_fingerprint(&headers, &req.user_id),
+        created_at: now_timestamp(),
+    };
+
+    // 3. Guardar credencial
     {
-        let mut passkeys = state.passkeys.write().await;
-        let entry = passkeys.entry(assertion.user_id.clone()).or_insert_with(Vec::new);
-        if !entry.contains(&assertion.credential_id) {
-            entry.push(assertion.credential_id.clone());
+        let mut creds = state.credentials.write().await;
+        let entry = creds.entry(req.user_id.clone()).or_insert_with(Vec::new);
+        if !entry.iter().any(|c| c.credential_id == req.credential_id) {
+            entry.push(credential);
         }
     }
 
-    // 4. Eliminar reto usado
-    state.challenges.write().await.remove(&assertion.challenge);
+    state.challenges.write().await.remove(challenge_str);
 
-    // 5. Construir Payload Cognitivo y tokens
-    let payload = build_cognitive_payload(&assertion.user_id);
+    let mut resp = HashMap::new();
+    resp.insert("status".to_string(), "registered".to_string());
+    resp.insert("credential_id".to_string(), req.credential_id);
+    Ok(Json(resp))
+}
+
+async fn login_begin(
+    State(state): State<AuthState>,
+    headers: HeaderMap,
+    Json(req): Json<HashMap<String, String>>,
+) -> Result<Json<AssertionOptions>, (StatusCode, String)> {
+    let user_id = req.get("user_id").cloned().unwrap_or_else(|| Uuid::new_v4().to_string());
+    let challenge = generate_random_challenge();
+    let _fingerprint = compute_device_fingerprint(&headers, &user_id);
+
+    state.challenges.write().await.insert(challenge.clone(), PasskeyChallenge {
+        challenge: challenge.clone(),
+        user_id: user_id.clone(),
+        origin: ORIGIN.to_string(),
+        created_at: now_timestamp(),
+        operation: "login".to_string(),
+    });
+
+    let creds = state.credentials.read().await;
+    let user_creds = creds.get(&user_id).cloned().unwrap_or_default();
+
+    let allow_credentials: Vec<HashMap<String, String>> = user_creds
+        .iter()
+        .map(|c| {
+            let mut m = HashMap::new();
+            m.insert("type".to_string(), "public-key".to_string());
+            m.insert("id".to_string(), c.credential_id.clone());
+            m.insert("transports".to_string(), c.transports.join(","));
+            m
+        })
+        .collect();
+
+    let options = AssertionOptions {
+        challenge,
+        allow_credentials,
+        user_verification: "required".to_string(),
+        timeout: 120000,
+        rp_id: RP_ID.to_string(),
+    };
+
+    Ok(Json(options))
+}
+
+async fn login_finish(
+    State(state): State<AuthState>,
+    headers: HeaderMap,
+    Json(req): Json<FidoAssertion>,
+) -> Result<Json<TokenPair>, (StatusCode, String)> {
+    // 1. Recuperar y validar reto
+    let client_data = parse_client_data_json(&req.client_data_json)
+        .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
+
+    let challenge_b64 = client_data
+        .get("challenge")
+        .and_then(|v| v.as_str())
+        .ok_or((StatusCode::BAD_REQUEST, "Missing challenge".to_string()))?;
+
+    let stored = {
+        let store = state.challenges.read().await;
+        store.get(challenge_b64).cloned()
+    };
+
+    let stored = stored.ok_or((StatusCode::UNAUTHORIZED, "Invalid or expired challenge".to_string()))?;
+
+    if is_expired(stored.created_at, CHALLENGE_TTL_SECONDS) {
+        state.challenges.write().await.remove(challenge_b64);
+        return Err((StatusCode::UNAUTHORIZED, "Challenge expired".to_string()));
+    }
+
+    validate_challenge(&client_data, &stored.challenge)
+        .map_err(|e| (StatusCode::UNAUTHORIZED, e))?;
+    validate_origin(&client_data)
+        .map_err(|e| (StatusCode::UNAUTHORIZED, e))?;
+
+    // 2. Recuperar credencial del usuario
+    let mut creds = state.credentials.write().await;
+    let user_creds = creds.get_mut(&req.user_id)
+        .ok_or((StatusCode::UNAUTHORIZED, "No credentials for user".to_string()))?;
+
+    let credential = user_creds
+        .iter_mut()
+        .find(|c| c.credential_id == req.credential_id)
+        .ok_or((StatusCode::UNAUTHORIZED, "Unknown credential".to_string()))?;
+
+    // 3. Validar authenticatorData
+    let auth_data = decode_base64url(&req.authenticator_data)
+        .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid authenticator data".to_string()))?;
+
+    validate_rp_id(&auth_data)
+        .map_err(|e| (StatusCode::UNAUTHORIZED, e))?;
+    check_user_flags(&auth_data)
+        .map_err(|e| (StatusCode::UNAUTHORIZED, e))?;
+
+    // 4. Verificar contador (anti-clonacion)
+    let counter = u32::from_be_bytes([auth_data[33], auth_data[34], auth_data[35], auth_data[36]]);
+    if counter <= credential.counter {
+        return Err((StatusCode::UNAUTHORIZED, "Credential counter mismatch (possible replay)".to_string()));
+    }
+    credential.counter = counter;
+
+    // 5. Device fingerprinting
+    let current_fp = compute_device_fingerprint(&headers, &req.user_id);
+    verify_device_fingerprint(&credential.device_fingerprint, &current_fp)
+        .map_err(|e| (StatusCode::UNAUTHORIZED, e))?;
+
+    // 6. Verificar firma criptografica
+    let client_data_hash = sha256_bytes(&decode_base64url(&req.client_data_json).unwrap_or_default());
+    let signature = decode_base64url(&req.signature)
+        .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid signature".to_string()))?;
+
+    verify_signature(&credential.public_key_der, &auth_data, &client_data_hash, &signature)
+        .map_err(|e| (StatusCode::UNAUTHORIZED, e))?;
+
+    // 7. Limpiar reto
+    state.challenges.write().await.remove(challenge_b64);
+
+    // 8. Emitir tokens
+    let payload = build_cognitive_payload(&req.user_id);
     let (access_token, refresh_token) = issue_tokens(
-        &assertion.user_id,
+        &req.user_id,
         &payload.identity_node,
         &payload.clearance_level,
     );
 
-    // 6. Almacenar refresh token
     {
         let mut rt_store = state.refresh_tokens.write().await;
         rt_store.insert(
             hash_token(&refresh_token),
             RefreshTokenRecord {
-                user_id: assertion.user_id.clone(),
+                user_id: req.user_id.clone(),
+                token_hash: hash_token(&refresh_token),
+                expires_at: (Utc::now() + Duration::days(REFRESH_TOKEN_TTL_DAYS)).timestamp(),
+            },
+        );
+    }
+
+    Ok(Json(TokenPair {
+        access_token,
+        refresh_token,
+        expires_in: ACCESS_TOKEN_TTL_MINUTES * 60,
+        cognitive_payload: payload,
+    }))
+}
+
+// --- Legacy endpoints para compatibilidad ---
+
+async fn legacy_challenge(
+    State(state): State<AuthState>,
+    Json(req): Json<HashMap<String, String>>,
+) -> Result<Json<HashMap<String, String>>, (StatusCode, String)> {
+    let user_id = req.get("user_id").cloned().unwrap_or_else(|| Uuid::new_v4().to_string());
+    let challenge = generate_random_challenge();
+
+    state.challenges.write().await.insert(challenge.clone(), PasskeyChallenge {
+        challenge: challenge.clone(),
+        user_id,
+        origin: ORIGIN.to_string(),
+        created_at: now_timestamp(),
+        operation: "login".to_string(),
+    });
+
+    let mut resp = HashMap::new();
+    resp.insert("challenge".to_string(), challenge);
+    Ok(Json(resp))
+}
+
+async fn legacy_login(
+    State(state): State<AuthState>,
+    Json(req): Json<HashMap<String, String>>,
+) -> Result<Json<TokenPair>, (StatusCode, String)> {
+    let user_id = req.get("user_id").cloned().unwrap_or_else(|| "anonymous".to_string());
+    let credential_id = req.get("credential_id").cloned().unwrap_or_default();
+    let signature = req.get("signature").cloned().unwrap_or_default();
+
+    // Legacy demo path: acepta firma no vacia de longitud razonable
+    if signature.len() < 16 {
+        return Err((StatusCode::UNAUTHORIZED, "Invalid signature".to_string()));
+    }
+
+    // 1. Guardar credential legacy
+    {
+        let mut creds = state.credentials.write().await;
+        let entry = creds.entry(user_id.clone()).or_insert_with(Vec::new);
+        if !entry.iter().any(|c| c.credential_id == credential_id) {
+            let public_key = (0..65).map(|i| i as u8).collect::<Vec<u8>>();
+            entry.push(PublicKeyCredential {
+                credential_id,
+                public_key_der: public_key,
+                counter: 0,
+                aaguid: "legacy".to_string(),
+                transports: vec!["internal".to_string()],
+                device_fingerprint: "legacy".to_string(),
+                created_at: now_timestamp(),
+            });
+        }
+    }
+
+    let payload = build_cognitive_payload(&user_id);
+    let (access_token, refresh_token) = issue_tokens(&user_id, &payload.identity_node, &payload.clearance_level);
+
+    {
+        let mut rt_store = state.refresh_tokens.write().await;
+        rt_store.insert(
+            hash_token(&refresh_token),
+            RefreshTokenRecord {
+                user_id: user_id.clone(),
                 token_hash: hash_token(&refresh_token),
                 expires_at: (Utc::now() + Duration::days(REFRESH_TOKEN_TTL_DAYS)).timestamp(),
             },
@@ -239,13 +692,12 @@ async fn login(
 }
 
 async fn refresh(
-    State(state): axum::extract::State<AuthState>,
+    State(state): State<AuthState>,
     Json(req): Json<HashMap<String, String>>,
 ) -> Result<Json<TokenPair>, (StatusCode, String)> {
     let refresh_token = req.get("refresh_token").cloned()
         .ok_or((StatusCode::BAD_REQUEST, "Missing refresh_token".to_string()))?;
 
-    // Verificar que el refresh token exista y no haya expirado
     let record = {
         let store = state.refresh_tokens.read().await;
         store.get(&hash_token(&refresh_token)).cloned()
@@ -256,7 +708,6 @@ async fn refresh(
         _ => return Err((StatusCode::UNAUTHORIZED, "Invalid or expired refresh token".to_string())),
     };
 
-    // Rotar: eliminar el anterior, emitir nuevos
     state.refresh_tokens.write().await.remove(&record.token_hash);
 
     let payload = build_cognitive_payload(&record.user_id);
@@ -288,7 +739,7 @@ async fn refresh(
 
 async fn verify(
     headers: HeaderMap,
-    State(state): axum::extract::State<AuthState>,
+    State(state): State<AuthState>,
 ) -> Result<Json<Claims>, (StatusCode, String)> {
     let auth_header = headers
         .get("authorization")
@@ -307,10 +758,7 @@ async fn verify(
     Ok(Json(token_data.claims))
 }
 
-async fn cognitive_context(
-    headers: HeaderMap,
-) -> Result<Json<CognitivePayload>, (StatusCode, String)> {
-    // Simulacion: en produccion, extraer user_id del JWT y cargar de Redis/Neo4j/Qdrant
+async fn cognitive_context(headers: HeaderMap) -> Result<Json<CognitivePayload>, (StatusCode, String)> {
     let user_id = headers
         .get("x-user-id")
         .and_then(|v| v.to_str().ok())
@@ -325,9 +773,8 @@ async fn cognitive_context(
 async fn main() {
     let state = AuthState {
         challenges: Arc::new(RwLock::new(HashMap::new())),
-        passkeys: Arc::new(RwLock::new(HashMap::new())),
+        credentials: Arc::new(RwLock::new(HashMap::new())),
         refresh_tokens: Arc::new(RwLock::new(HashMap::new())),
-        encoding_key: EncodingKey::from_secret(JWT_SECRET),
         decoding_key: DecodingKey::from_secret(JWT_SECRET),
     };
 
@@ -337,8 +784,12 @@ async fn main() {
         .allow_headers(Any);
 
     let app = Router::new()
-        .route("/auth/challenge", post(challenge))
-        .route("/auth/login", post(login))
+        .route("/auth/register/begin", post(register_begin))
+        .route("/auth/register/finish", post(register_finish))
+        .route("/auth/login/begin", post(login_begin))
+        .route("/auth/login/finish", post(login_finish))
+        .route("/auth/challenge", post(legacy_challenge))
+        .route("/auth/login", post(legacy_login))
         .route("/auth/refresh", post(refresh))
         .route("/auth/verify", get(verify))
         .route("/auth/context", get(cognitive_context))
