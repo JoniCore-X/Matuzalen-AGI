@@ -3,248 +3,197 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Matuzalen AGI - Terminal Soberana</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <title>Matuzalen</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-900: #05050a;
-            --bg-800: #0a0a14;
-            --bg-700: #12121f;
-            --bg-600: #1a1a2e;
-            --bg-500: #25253d;
+            --bg: #0a0a14;
+            --surface: #141420;
+            --surface-2: #1c1c2c;
+            --border: #2a2a3d;
+            --text: #f0f0f5;
+            --muted: #9090a8;
             --accent: #7c83ff;
             --accent-2: #00d4ff;
             --success: #00e676;
-            --warning: #ffab00;
-            --danger: #ff5252;
-            --text: #e8e8f0;
-            --text-sec: #9090a8;
-            --border: #2a2a4a;
-            --glow: rgba(124, 131, 255, 0.15);
+            --user: #7c83ff;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        body {
+        html, body {
+            height: 100%;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg-900);
+            background: var(--bg);
             color: var(--text);
-            height: 100vh;
             overflow: hidden;
-            display: flex;
         }
 
-        /* Sidebar */
-        .sidebar {
-            width: 260px;
-            background: var(--bg-800);
-            border-right: 1px solid var(--border);
+        .app {
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            padding: 24px 20px;
+            max-width: 900px;
+            margin: 0 auto;
+            border-left: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+            background: var(--surface);
+        }
+
+        header {
+            padding: 16px 24px;
+            background: var(--surface-2);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
         }
 
         .brand {
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-bottom: 32px;
-            padding-bottom: 24px;
-            border-bottom: 1px solid var(--border);
         }
 
-        .brand-icon {
-            width: 40px; height: 40px;
+        .avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
             background: linear-gradient(135deg, var(--accent), var(--accent-2));
-            border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: 700; color: #fff;
-            box-shadow: 0 0 20px rgba(124, 131, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 15px;
+            color: #fff;
         }
 
         .brand-text h1 {
-            font-size: 18px; font-weight: 700; letter-spacing: -0.5px;
-        }
-        .brand-text span {
-            font-size: 11px; color: var(--text-sec); text-transform: uppercase; letter-spacing: 1px;
-        }
-
-        .nav-section {
-            margin-bottom: 24px;
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: -0.3px;
         }
 
-        .nav-title {
-            font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px;
-            color: var(--text-sec); margin-bottom: 10px; padding-left: 12px;
+        .brand-text p {
+            font-size: 12px;
+            color: var(--muted);
         }
 
-        .nav-item {
-            display: flex; align-items: center; gap: 12px;
-            padding: 12px;
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #555;
+        }
+
+        .dot.online { background: var(--success); box-shadow: 0 0 8px var(--success); }
+
+        .toolbar {
+            display: flex;
+            gap: 8px;
+        }
+
+        .toolbar button {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            padding: 8px 14px;
             border-radius: 8px;
-            color: var(--text-sec);
+            font-size: 12px;
             cursor: pointer;
-            font-size: 14px;
-            margin-bottom: 4px;
             transition: all 0.2s;
         }
 
-        .nav-item:hover, .nav-item.active {
-            background: var(--bg-600);
+        .toolbar button:hover {
+            border-color: var(--accent);
             color: var(--text);
         }
 
-        .nav-item.active { border-left: 3px solid var(--accent); }
-
-        .nav-icon { width: 18px; text-align: center; }
-
-        .user-card {
-            margin-top: auto;
-            background: var(--bg-700);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 16px;
-        }
-
-        .user-card label {
-            font-size: 11px; text-transform: uppercase; color: var(--text-sec); letter-spacing: 0.5px;
-        }
-
-        .user-card input {
-            width: 100%;
-            margin-top: 8px;
-            padding: 10px 12px;
-            background: var(--bg-800);
-            border: 1px solid var(--border);
-            border-radius: 8px;
+        .toolbar button.active {
+            background: rgba(124, 131, 255, 0.15);
+            border-color: var(--accent);
             color: var(--text);
-            font-size: 13px;
-            outline: none;
         }
 
-        .user-card input:focus { border-color: var(--accent); }
-
-        /* Main */
         .main {
             flex: 1;
             display: flex;
-            flex-direction: column;
             overflow: hidden;
         }
 
-        .topbar {
-            height: 64px;
-            background: var(--bg-800);
-            border-bottom: 1px solid var(--border);
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 0 28px;
-        }
-
-        .breadcrumbs {
-            font-size: 14px; color: var(--text-sec);
-        }
-
-        .breadcrumbs strong { color: var(--text); }
-
-        .service-status {
-            display: flex; gap: 20px;
-        }
-
-        .service-pill {
-            display: flex; align-items: center; gap: 8px;
-            font-size: 12px; color: var(--text-sec);
-            background: var(--bg-700);
-            padding: 6px 12px;
-            border-radius: 20px;
-            border: 1px solid var(--border);
-        }
-
-        .service-pill .dot {
-            width: 8px; height: 8px; border-radius: 50%;
-            background: #444;
-        }
-
-        .service-pill.online .dot { background: var(--success); box-shadow: 0 0 8px var(--success); }
-        .service-pill.offline .dot { background: var(--danger); }
-
-        /* Workspace */
-        .workspace {
+        .chat-area {
             flex: 1;
-            display: grid;
-            grid-template-columns: 1fr 340px;
-            overflow: hidden;
-        }
-
-        /* Chat panel */
-        .chat-panel {
             display: flex;
             flex-direction: column;
-            border-right: 1px solid var(--border);
         }
 
         .messages {
             flex: 1;
             overflow-y: auto;
-            padding: 28px;
+            padding: 24px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 18px;
         }
 
         .message {
             max-width: 80%;
-            padding: 16px 18px;
-            border-radius: 14px;
-            line-height: 1.6;
-            font-size: 14px;
+            padding: 14px 16px;
+            border-radius: 16px;
+            line-height: 1.55;
+            font-size: 15px;
             white-space: pre-wrap;
             word-wrap: break-word;
-            animation: messageIn 0.3s ease;
+            animation: in 0.25s ease;
         }
 
-        @keyframes messageIn {
-            from { opacity: 0; transform: translateY(10px); }
+        @keyframes in {
+            from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
         .message.user {
             align-self: flex-end;
-            background: linear-gradient(135deg, #6366f1, #7c83ff);
+            background: var(--user);
             color: #fff;
             border-bottom-right-radius: 4px;
         }
 
         .message.agent {
             align-self: flex-start;
-            background: var(--bg-700);
+            background: var(--surface-2);
             border: 1px solid var(--border);
             border-bottom-left-radius: 4px;
             color: var(--text);
         }
 
         .message.typing {
-            color: var(--text-sec);
+            color: var(--muted);
             font-style: italic;
         }
 
-        .message-time {
-            font-size: 10px;
-            opacity: 0.6;
-            margin-top: 8px;
-        }
-
         .input-area {
-            padding: 20px 28px;
-            background: var(--bg-800);
+            padding: 16px 24px;
+            background: var(--surface-2);
             border-top: 1px solid var(--border);
         }
 
         .input-box {
-            display: flex; gap: 12px;
-            background: var(--bg-700);
+            display: flex;
+            gap: 10px;
+            background: var(--bg);
             border: 1px solid var(--border);
             border-radius: 14px;
-            padding: 8px;
+            padding: 6px;
         }
 
         .input-box input {
@@ -253,249 +202,196 @@
             border: none;
             color: var(--text);
             font-size: 15px;
-            padding: 12px 16px;
+            padding: 12px 14px;
             outline: none;
         }
 
-        .input-box input::placeholder { color: var(--text-sec); }
+        .input-box input::placeholder { color: var(--muted); }
 
         .input-box button {
-            padding: 12px 22px;
+            padding: 10px 20px;
             background: var(--accent);
             border: none;
             border-radius: 10px;
             color: #fff;
             font-weight: 600;
+            font-size: 14px;
             cursor: pointer;
-            transition: all 0.2s;
         }
 
-        .input-box button:hover { background: #6a71ee; }
-        .input-box button:disabled { background: #3a3a5c; cursor: not-allowed; }
+        .input-box button:disabled { background: #3a3a55; cursor: not-allowed; }
 
-        /* Right panel */
-        .info-panel {
-            background: var(--bg-800);
-            display: flex;
+        .context-drawer {
+            width: 320px;
+            background: var(--surface-2);
+            border-left: 1px solid var(--border);
+            display: none;
             flex-direction: column;
             overflow-y: auto;
-        }
-
-        .panel-section {
-            padding: 24px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .panel-title {
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-sec);
-            margin-bottom: 16px;
-            display: flex; align-items: center; gap: 8px;
-        }
-
-        .consciousness-box {
-            background: var(--bg-700);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 16px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 13px;
-            color: var(--accent-2);
-            min-height: 80px;
-        }
-
-        .stat-row {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 10px;
-            font-size: 13px;
-        }
-
-        .stat-row span:first-child { color: var(--text-sec); }
-        .stat-row span:last-child { color: var(--text); font-weight: 500; }
-
-        .plan-card {
-            background: var(--bg-700);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 12px;
-        }
-
-        .plan-card h4 {
-            font-size: 14px; margin-bottom: 4px; color: var(--accent-2);
-        }
-
-        .plan-card p {
-            font-size: 12px; color: var(--text-sec); line-height: 1.5;
-        }
-
-        .risk-pill {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-size: 11px;
-            margin-top: 8px;
-            background: rgba(255, 82, 82, 0.15);
-            color: #ff8585;
-            border: 1px solid rgba(255, 82, 82, 0.3);
-        }
-
-        .empty-state {
-            color: var(--text-sec);
-            font-size: 13px;
-            text-align: center;
             padding: 20px;
         }
 
-        .loading-bar {
-            height: 2px;
-            width: 100%;
-            background: linear-gradient(90deg, transparent, var(--accent), transparent);
-            background-size: 200% 100%;
-            animation: loading 1.5s infinite;
-        }
+        .context-drawer.open { display: flex; }
 
-        @keyframes loading {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 10px;
+        .context-title {
+            font-size: 13px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            background: var(--bg-600);
-            color: var(--text-sec);
+            letter-spacing: 0.8px;
+            color: var(--muted);
+            margin-bottom: 14px;
         }
 
-        .badge.omega { background: rgba(124, 131, 255, 0.2); color: var(--accent); }
+        .card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 14px;
+        }
 
-        /* Scrollbar */
+        .card h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--text);
+        }
+
+        .card p {
+            font-size: 13px;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        .next-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .next-step:last-child { border-bottom: none; padding-bottom: 0; }
+
+        .next-step .num {
+            width: 22px;
+            height: 22px;
+            background: rgba(124, 131, 255, 0.2);
+            color: var(--accent);
+            border-radius: 50%;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .next-step .txt {
+            font-size: 13px;
+            color: var(--text);
+        }
+
+        .empty {
+            font-size: 13px;
+            color: var(--muted);
+            text-align: center;
+            padding: 24px;
+        }
+
+        .typing-dots {
+            display: inline-flex;
+            gap: 4px;
+            align-items: center;
+            padding: 4px 0;
+        }
+
+        .typing-dots span {
+            width: 6px;
+            height: 6px;
+            background: var(--muted);
+            border-radius: 50%;
+            animation: blink 1.4s infinite both;
+        }
+
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes blink {
+            0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--bg-500); border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--bg-600); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        @media (max-width: 640px) {
+            .context-drawer {
+                position: absolute;
+                right: 0;
+                top: 0;
+                bottom: 0;
+                width: 280px;
+                z-index: 10;
+            }
+        }
     </style>
 </head>
 <body>
-    <aside class="sidebar">
-        <div class="brand">
-            <div class="brand-icon">M</div>
-            <div class="brand-text">
-                <h1>Matuzalen</h1>
-                <span>AGI Soberana</span>
+    <div class="app">
+        <header>
+            <div class="brand">
+                <div class="avatar">M</div>
+                <div class="brand-text">
+                    <h1>Matuzalen</h1>
+                    <p>Tu asistente estratégico</p>
+                </div>
             </div>
-        </div>
-
-        <div class="nav-section">
-            <div class="nav-title">Nucleo</div>
-            <div class="nav-item active" onclick="switchTab('chat')">
-                <span class="nav-icon">&#9993;</span> Terminal
+            <div class="toolbar">
+                <button id="btn-context" onclick="toggleContext()">Ver mi situación</button>
             </div>
-            <div class="nav-item" onclick="loadPlanContext()">
-                <span class="nav-icon">&#9733;</span> Planes
-            </div>
-            <div class="nav-item" onclick="awakenConsciousness()">
-                <span class="nav-icon">&#9851;</span> Despertar
-            </div>
-        </div>
-
-        <div class="nav-section">
-            <div class="nav-title">Sistemas</div>
-            <div class="nav-item" onclick="window.open('/api/health/')">
-                <span class="nav-icon">&#9769;</span> Salud
-            </div>
-            <div class="nav-item" onclick="window.open('/api/plan/events?plan_id='+activePlanId)">
-                <span class="nav-icon">&#9636;</span> Eventos
-            </div>
-        </div>
-
-        <div class="user-card">
-            <label>Identidad Soberana</label>
-            <input type="text" id="userId" value="user-001" placeholder="user_id">
-            <div style="margin-top:8px;font-size:11px;color:var(--text-sec)">
-                <span class="badge omega">Omega</span> Arquitecto
-            </div>
-        </div>
-    </aside>
-
-    <main class="main">
-        <header class="topbar">
-            <div class="breadcrumbs">
-                Matuzalen / <strong>Terminal Soberana</strong>
-            </div>
-            <div class="service-status">
-                <div class="service-pill" id="pill-ollama"><span class="dot"></span>Ollama</div>
-                <div class="service-pill" id="pill-neo4j"><span class="dot"></span>Neo4j</div>
-                <div class="service-pill" id="pill-qdrant"><span class="dot"></span>Qdrant</div>
+            <div class="status">
+                <span class="dot online" id="dot"></span>
+                <span id="state-text">En linea</span>
             </div>
         </header>
 
-        <div class="workspace">
-            <section class="chat-panel">
-                <div id="loading" class="loading-bar" style="display:none;"></div>
+        <div class="main">
+            <section class="chat-area">
                 <div class="messages" id="messages"></div>
                 <div class="input-area">
                     <form class="input-box" id="form">
-                        <input id="input" type="text" placeholder="Ordena a Matuzalen..." autocomplete="off" autofocus>
+                        <input id="input" type="text" placeholder="Escribe a Matuzalen..." autocomplete="off" autofocus>
                         <button id="send" type="submit">Enviar</button>
                     </form>
                 </div>
             </section>
 
-            <aside class="info-panel">
-                <div class="panel-section">
-                    <div class="panel-title">&#9729; Pensamiento Autonomo</div>
-                    <div class="consciousness-box" id="thoughts">Conciencia: esperando...</div>
-                    <div class="stat-row" style="margin-top:12px;">
-                        <span>Estado</span>
-                        <span id="state-text">conectando...</span>
-                    </div>
-                    <div class="stat-row">
-                        <span>Ciclos</span>
-                        <span id="cycles">0</span>
-                    </div>
-                </div>
-
-                <div class="panel-section">
-                    <div class="panel-title">&#9733; Plan Activo</div>
-                    <div id="plan-container">
-                        <div class="empty-state">Sin plan activo. Crea uno con /plan</div>
-                    </div>
-                </div>
-
-                <div class="panel-section">
-                    <div class="panel-title">&#9888; Riesgos Criticos</div>
-                    <div id="risks-container">
-                        <div class="empty-state">Sin riesgos detectados</div>
-                    </div>
+            <aside class="context-drawer" id="context-drawer">
+                <div class="context-title">Tu situación</div>
+                <div id="context-content">
+                    <div class="empty">Aún no hay un plan activo.</div>
                 </div>
             </aside>
         </div>
-    </main>
+    </div>
 
     <script>
         const messages = document.getElementById('messages');
         const form = document.getElementById('form');
         const input = document.getElementById('input');
         const send = document.getElementById('send');
-        const loading = document.getElementById('loading');
-        let activePlanId = null;
-
-        function getUserId() {
-            return document.getElementById('userId').value.trim() || 'anonymous';
-        }
+        const drawer = document.getElementById('context-drawer');
+        const contextBtn = document.getElementById('btn-context');
+        const userId = 'user-001';
 
         function addMsg(text, cls) {
             const div = document.createElement('div');
             div.className = 'message ' + cls;
-            const now = new Date().toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'});
-            div.innerHTML = `<div>${escapeHtml(text)}</div><div class="message-time">${now}</div>`;
+            if (cls === 'typing') {
+                div.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+            } else {
+                div.innerHTML = escapeHtml(text);
+            }
             messages.appendChild(div);
             messages.scrollTop = messages.scrollHeight;
             return div;
@@ -509,10 +405,6 @@
                 .replace(/\n/g, '<br>');
         }
 
-        function formatTime(date) {
-            return new Date(date).toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'});
-        }
-
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const text = input.value.trim();
@@ -520,126 +412,92 @@
             addMsg(text, 'user');
             input.value = '';
             send.disabled = true;
-            loading.style.display = 'block';
 
-            const thinking = document.createElement('div');
-            thinking.className = 'message agent typing';
-            thinking.textContent = 'Matuzalen esta pensando...';
-            messages.appendChild(thinking);
-            messages.scrollTop = messages.scrollHeight;
+            const thinking = addMsg('', 'typing');
 
             try {
                 const r = await fetch('/api/chat/simple', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({message: text, user_id: getUserId()})
+                    body: JSON.stringify({message: text, user_id: userId})
                 });
                 const data = await r.json();
                 thinking.remove();
-                addMsg(data.agent_response || data.error || 'Sin respuesta', 'agent');
-                if (data.context_injected) loadPlanContext();
+                addMsg(data.agent_response || 'No tengo respuesta ahora.', 'agent');
+                if (data.context_injected) loadContext();
             } catch (err) {
                 thinking.remove();
-                addMsg('Error de conexion: ' + err.message, 'agent');
+                addMsg('No pude conectar. Intenta de nuevo.', 'agent');
             }
             send.disabled = false;
-            loading.style.display = 'none';
             input.focus();
         });
 
-        async function updateConsciousness() {
-            try {
-                const r = await fetch('/api/consciousness/state');
-                const s = await r.json();
-                document.getElementById('state-text').textContent = s.state;
-                document.getElementById('cycles').textContent = s.total_cycles || 0;
-                if (s.recent_thoughts && s.recent_thoughts.length) {
-                    document.getElementById('thoughts').textContent =
-                        '>> ' + s.recent_thoughts[s.recent_thoughts.length - 1];
-                }
-            } catch (e) {}
+        function toggleContext() {
+            drawer.classList.toggle('open');
+            contextBtn.classList.toggle('active');
+            contextBtn.textContent = drawer.classList.contains('open') ? 'Ocultar' : 'Ver mi situación';
         }
 
-        async function loadPlanContext() {
+        async function loadContext() {
             try {
-                const r = await fetch('/api/plan/context?user_id=' + getUserId());
+                const r = await fetch('/api/plan/context?user_id=' + userId);
                 if (!r.ok) throw new Error('Sin plan');
                 const ctx = await r.json();
-                activePlanId = ctx.plan_id;
+                const container = document.getElementById('context-content');
 
-                const planContainer = document.getElementById('plan-container');
-                const risksContainer = document.getElementById('risks-container');
+                let html = '';
 
-                if (ctx.plan_id) {
-                    let html = `
-                        <div class="plan-card">
-                            <h4>${ctx.plan_nombre}</h4>
+                if (ctx.plan_nombre) {
+                    html += `
+                        <div class="card">
+                            <h3>${ctx.plan_nombre}</h3>
                             <p>${ctx.proposito}</p>
                         </div>
                     `;
-                    if (ctx.next_steps && ctx.next_steps.length) {
-                        html += `<div class="plan-card"><h4>Siguientes pasos</h4>`;
-                        ctx.next_steps.forEach(step => {
-                            html += `<p style="margin-top:8px">- ${step.descripcion} <span class="badge">P:${step.prioridad}</span></p>`;
-                        });
-                        html += `</div>`;
-                    }
-                    planContainer.innerHTML = html;
+                }
+
+                if (ctx.next_steps && ctx.next_steps.length) {
+                    html += '<div class="context-title">Proximos pasos</div>';
+                    html += '<div class="card">';
+                    ctx.next_steps.forEach((step, i) => {
+                        html += `
+                            <div class="next-step">
+                                <span class="num">${i + 1}</span>
+                                <span class="txt">${step.descripcion}</span>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
                 }
 
                 if (ctx.critical_risks && ctx.critical_risks.length) {
-                    risksContainer.innerHTML = ctx.critical_risks.map(r => `
-                        <div class="plan-card">
-                            <h4>${r.descripcion}</h4>
-                            <div class="risk-pill">Prob: ${r.probabilidad} / Impacto: ${r.impacto}</div>
-                        </div>
-                    `).join('');
-                } else {
-                    risksContainer.innerHTML = '<div class="empty-state">Sin riesgos criticos</div>';
+                    html += '<div class="context-title">Puntos de atencion</div>';
+                    html += '<div class="card">';
+                    ctx.critical_risks.forEach(risk => {
+                        html += `<p style="margin-bottom:8px;">- ${risk.descripcion}</p>`;
+                    });
+                    html += '</div>';
                 }
+
+                container.innerHTML = html || '<div class="empty">No hay informacion disponible.</div>';
             } catch (e) {
-                console.log('Plan context error:', e);
+                document.getElementById('context-content').innerHTML = '<div class="empty">Aun no hay un plan activo.</div>';
             }
         }
 
-        async function checkServices() {
+        async function updateState() {
             try {
-                const r = await fetch('/api/health/');
-                const h = await r.json();
-                setPill('pill-ollama', h.ollama);
-                setPill('pill-neo4j', h.neo4j);
-                setPill('pill-qdrant', h.qdrant);
+                const r = await fetch('/api/consciousness/state');
+                const s = await r.json();
+                document.getElementById('dot').className = 'dot ' + (s.is_running ? 'online' : '');
+                document.getElementById('state-text').textContent = s.is_running ? 'En linea' : 'Descansando';
             } catch (e) {}
         }
 
-        function setPill(id, online) {
-            const pill = document.getElementById(id);
-            if (online) {
-                pill.classList.add('online');
-                pill.classList.remove('offline');
-            } else {
-                pill.classList.remove('online');
-                pill.classList.add('offline');
-            }
-        }
-
-        function awakenConsciousness() {
-            fetch('/api/consciousness/control', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({action: 'awaken'})
-            }).then(updateConsciousness);
-        }
-
-        function switchTab(tab) {
-            // Placeholder para futuras vistas
-        }
-
-        updateConsciousness();
-        loadPlanContext();
-        checkServices();
-        setInterval(updateConsciousness, 5000);
-        setInterval(checkServices, 10000);
+        loadContext();
+        updateState();
+        setInterval(updateState, 10000);
     </script>
 </body>
 </html>
