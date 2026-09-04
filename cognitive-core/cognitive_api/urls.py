@@ -43,6 +43,7 @@ urlpatterns = [
     # Chat with agent
     path('chat', views.chat_with_agent, name='chat_with_agent'),
     path('chat/simple', views.chat_simple, name='chat_simple'),
+    path('chat/history', views.get_chat_history, name='get_chat_history'),
 
     # Sovereign plan tools (Tool Use / Function Calling)
     path('plan/create', views.create_sovereign_plan, name='create_sovereign_plan'),

@@ -10,6 +10,8 @@ from datetime import datetime
 import os
 import asyncio
 from django.conf import settings
+from django.utils import timezone
+from .models import ChatMessage
 
 # Importar componentes del núcleo cognitivo
 USE_DOCKER_SERVICES = settings.USE_DOCKER_SERVICES
@@ -917,6 +919,10 @@ def chat_simple(request):
 
         response = asyncio.run(_generate_response())
 
+        # Guardar conversacion en base de datos
+        ChatMessage.objects.create(user_id=user_id, role='user', text=message)
+        ChatMessage.objects.create(user_id=user_id, role='agent', text=response)
+
         return Response({
             "user_message": message,
             "agent_response": response,
@@ -925,6 +931,29 @@ def chat_simple(request):
         })
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_chat_history(request):
+    """Devuelve el historial profesional de mensajes del usuario"""
+    user_id = request.query_params.get('user_id', 'anonymous')
+    limit = int(request.query_params.get('limit', 100))
+
+    messages = ChatMessage.objects.filter(user_id=user_id).order_by('-created_at')[:limit]
+
+    return Response({
+        "user_id": user_id,
+        "count": len(messages),
+        "messages": [
+            {
+                "role": m.role,
+                "text": m.text,
+                "timestamp": m.created_at.isoformat()
+            }
+            for m in reversed(messages)
+        ]
+    })
 
 
 # --- Herramientas de Mutacion de Planes (Tool Use / Function Calling) ---
