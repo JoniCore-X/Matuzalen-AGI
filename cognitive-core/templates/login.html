@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matuzalen - Acceso Soberano</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f5f7;
+            color: #1a1a1a;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            width: 100%;
+            max-width: 420px;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 26px;
+            margin: 0 auto 20px;
+        }
+
+        h1 { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+        .subtitle { font-size: 14px; color: #666; margin-bottom: 32px; }
+
+        .input-group {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: #555;
+            margin-bottom: 6px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-group input:focus { border-color: #6366f1; }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 12px;
+            transition: all 0.2s;
+        }
+
+        .btn-primary { background: #6366f1; color: #fff; }
+        .btn-primary:hover { background: #5558e0; }
+
+        .btn-secondary { background: #f0f0f5; color: #333; }
+        .btn-secondary:hover { background: #e4e4f0; }
+
+        .btn:disabled { background: #ccc; cursor: not-allowed; }
+
+        .status {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            display: none;
+        }
+
+        .status.show { display: block; }
+        .status.info { background: #eef2ff; color: #4f46e5; }
+        .status.success { background: #dcfce7; color: #166534; }
+        .status.error { background: #fee2e2; color: #991b1b; }
+
+        .fingerprint {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid #eee;
+            font-size: 11px;
+            color: #999;
+        }
+
+        .note {
+            font-size: 12px;
+            color: #888;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="avatar">M</div>
+        <h1>Matuzalen</h1>
+        <p class="subtitle">Acceso sin contraseñas. Solo tu dispositivo.</p>
+
+        <div class="input-group">
+            <label for="userId">Identidad</label>
+            <input id="userId" type="text" value="user-001" placeholder="Tu ID de usuario">
+        </div>
+
+        <button class="btn btn-primary" id="btn-register" onclick="registerPasskey()">Crear llave de acceso</button>
+        <button class="btn btn-secondary" id="btn-login" onclick="loginPasskey()">Iniciar sesion</button>
+
+        <div class="status" id="status"></div>
+
+        <p class="note">Usa tu huella, Face ID o PIN del dispositivo. Nunca guardamos tu contraseña.</p>
+
+        <div class="fingerprint" id="fingerprint"></div>
+    </div>
+
+    <script>
+        const AUTH_HOST = 'http://localhost:9001';
+
+        function bufferToBase64url(buffer) {
+            const bytes = new Uint8Array(buffer);
+            let binary = '';
+            for (let i = 0; i < bytes.byteLength; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return btoa(binary)
+                .replace(/\+/g, '-')
+                .replace(/\//g, '_')
+                .replace(/=+$/, '');
+        }
+
+        function base64urlToBuffer(base64url) {
+            let base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+            while (base64.length % 4) base64 += '=';
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        function getUserId() {
+            return document.getElementById('userId').value.trim() || 'anonymous';
+        }
+
+        function setStatus(text, type) {
+            const el = document.getElementById('status');
+            el.textContent = text;
+            el.className = 'status show ' + type;
+        }
+
+        function setButtons(enabled) {
+            document.getElementById('btn-register').disabled = !enabled;
+            document.getElementById('btn-login').disabled = !enabled;
+        }
+
+        async function registerPasskey() {
+            if (!window.PublicKeyCredential) {
+                setStatus('Tu navegador no soporta WebAuthn / FIDO2.', 'error');
+                return;
+            }
+
+            setButtons(false);
+            setStatus('Preparando registro...', 'info');
+
+            try {
+                const userId = getUserId();
+
+                const r1 = await fetch(`${AUTH_HOST}/auth/register/begin`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId })
+                });
+                const options = await r1.json();
+
+                const publicKey = {
+                    rp: options.rp,
+                    user: {
+                        id: base64urlToBuffer(options.user.id),
+                        name: options.user.name,
+                        displayName: options.user.displayName
+                    },
+                    challenge: base64urlToBuffer(options.challenge),
+                    pubKeyCredParams: options.pub_key_cred_params.map(p => ({
+                        type: p.type === 1 ? 'public-key' : 'public-key',
+                        alg: p.alg
+                    })),
+                    authenticatorSelection: {
+                        authenticatorAttachment: options.authenticator_selection.authenticatorAttachment,
+                        userVerification: options.authenticator_selection.userVerification,
+                        residentKey: options.authenticator_selection.residentKey
+                    },
+                    timeout: options.timeout,
+                    attestation: options.attestation
+                };
+
+                const credential = await navigator.credentials.create({ publicKey });
+
+                const payload = {
+                    user_id: userId,
+                    credential_id: bufferToBase64url(credential.rawId),
+                    client_data_json: bufferToBase64url(credential.response.clientDataJSON),
+                    attestation_object: bufferToBase64url(credential.response.attestationObject)
+                };
+
+                const r2 = await fetch(`${AUTH_HOST}/auth/register/finish`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await r2.json();
+                if (r2.ok) {
+                    setStatus('Llave creada. Ahora inicia sesion.', 'success');
+                } else {
+                    setStatus('Error: ' + (result.error || 'registro fallido'), 'error');
+                }
+            } catch (err) {
+                setStatus('Error: ' + err.message, 'error');
+            }
+
+            setButtons(true);
+        }
+
+        async function loginPasskey() {
+            if (!window.PublicKeyCredential) {
+                setStatus('Tu navegador no soporta WebAuthn / FIDO2.', 'error');
+                return;
+            }
+
+            setButtons(false);
+            setStatus('Solicitando autenticacion...', 'info');
+
+            try {
+                const userId = getUserId();
+
+                const r1 = await fetch(`${AUTH_HOST}/auth/login/begin`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId })
+                });
+                const options = await r1.json();
+
+                const publicKey = {
+                    challenge: base64urlToBuffer(options.challenge),
+                    allowCredentials: options.allow_credentials.map(c => ({
+                        type: 'public-key',
+                        id: base64urlToBuffer(c.id),
+                        transports: c.transports ? c.transports.split(',').filter(t => t) : ['internal']
+                    })),
+                    userVerification: options.user_verification,
+                    timeout: options.timeout,
+                    rpId: options.rp_id
+                };
+
+                const assertion = await navigator.credentials.get({ publicKey });
+
+                const payload = {
+                    user_id: userId,
+                    credential_id: bufferToBase64url(assertion.rawId),
+                    client_data_json: bufferToBase64url(assertion.response.clientDataJSON),
+                    authenticator_data: bufferToBase64url(assertion.response.authenticatorData),
+                    signature: bufferToBase64url(assertion.response.signature)
+                };
+
+                const r2 = await fetch(`${AUTH_HOST}/auth/login/finish`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await r2.json();
+                if (r2.ok && result.access_token) {
+                    localStorage.setItem('matuzalen_access_token', result.access_token);
+                    localStorage.setItem('matuzalen_refresh_token', result.refresh_token);
+                    setStatus('Autenticado. Redirigiendo...', 'success');
+                    setTimeout(() => window.location.href = '/', 1000);
+                } else {
+                    setStatus('Error: ' + (result.error || 'login fallido'), 'error');
+                }
+            } catch (err) {
+                setStatus('Error: ' + err.message, 'error');
+            }
+
+            setButtons(true);
+        }
+
+        // Mostrar huella del dispositivo (no se envia, solo visual)
+        document.getElementById('fingerprint').textContent =
+            'User-Agent: ' + navigator.userAgent.split(' ').slice(-1)[0].split('/')[0];
+    </script>
+</body>
+</html>

@@ -20,6 +20,7 @@ from cognitive_api.views import api_root
 
 urlpatterns = [
     path('', TemplateView.as_view(template_name='chat.html'), name='chat_ui'),
+    path('login/', TemplateView.as_view(template_name='login.html'), name='login_ui'),
     path('api-info/', api_root, name='api_root'),
     path('admin/', admin.site.urls),
     path('api/', include('cognitive_api.urls')),
