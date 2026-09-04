@@ -89,11 +89,45 @@
             padding: 20px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 6px;
         }
 
-        .message {
+        .date-separator {
+            text-align: center;
+            font-size: 12px;
+            color: #888;
+            margin: 14px 0;
+            position: relative;
+        }
+
+        .date-separator span {
+            background: #fff;
+            padding: 0 12px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .date-separator::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 20%;
+            right: 20%;
+            height: 1px;
+            background: #e0e0e0;
+        }
+
+        .message-row {
+            display: flex;
+            flex-direction: column;
             max-width: 75%;
+            margin-bottom: 8px;
+        }
+
+        .message-row.user { align-self: flex-end; align-items: flex-end; }
+        .message-row.agent { align-self: flex-start; align-items: flex-start; }
+
+        .message {
             padding: 12px 16px;
             border-radius: 18px;
             line-height: 1.5;
@@ -103,20 +137,27 @@
         }
 
         .message.user {
-            align-self: flex-end;
             background: #6366f1;
             color: #fff;
             border-bottom-right-radius: 6px;
         }
 
         .message.agent {
-            align-self: flex-start;
             background: #f0f0f5;
             color: #1a1a1a;
             border-bottom-left-radius: 6px;
         }
 
         .message.typing { color: #888; font-style: italic; }
+
+        .message-time {
+            font-size: 11px;
+            color: #999;
+            margin-top: 4px;
+            padding: 0 4px;
+        }
+
+        .message-row.user .message-time { text-align: right; }
 
         .input-area {
             padding: 16px 20px;
@@ -231,14 +272,101 @@
         const planBar = document.getElementById('plan-bar');
         const planToggle = document.getElementById('plan-toggle');
         const userId = 'user-001';
+        const STORAGE_KEY = 'matuzalen_chat_history';
 
-        function addMsg(text, cls) {
+        function now() {
+            return new Date().toISOString();
+        }
+
+        function formatTime(iso) {
+            const d = new Date(iso);
+            return d.toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'});
+        }
+
+        function formatDate(iso) {
+            const d = new Date(iso);
+            const today = new Date();
+            const yesterday = new Date();
+            yesterday.setDate(today.getDate() - 1);
+
+            const dateStr = d.toLocaleDateString('es-ES', {day: 'numeric', month: 'long'});
+
+            if (d.toDateString() === today.toDateString()) return 'Hoy';
+            if (d.toDateString() === yesterday.toDateString()) return 'Ayer';
+            return dateStr;
+        }
+
+        function loadHistory() {
+            const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            let lastDate = null;
+
+            data.forEach(item => {
+                const currentDate = new Date(item.timestamp).toDateString();
+                if (currentDate !== lastDate) {
+                    addDateSeparator(item.timestamp);
+                    lastDate = currentDate;
+                }
+                renderMessage(item.text, item.role, item.timestamp);
+            });
+        }
+
+        function saveToHistory(text, role, timestamp) {
+            const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            data.push({text, role, timestamp});
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+
+        function addDateSeparator(iso) {
             const div = document.createElement('div');
-            div.className = 'message ' + cls;
-            div.innerHTML = escapeHtml(text);
+            div.className = 'date-separator';
+            div.innerHTML = '<span>' + formatDate(iso) + '</span>';
             messages.appendChild(div);
+        }
+
+        function addMsg(text, role) {
+            const timestamp = now();
+            const currentDate = new Date(timestamp).toDateString();
+            const lastSeparator = messages.querySelector('.date-separator:last-child');
+            let lastDate = null;
+
+            if (lastSeparator) {
+                const lastMsg = messages.querySelector('.message-row:last-child');
+                if (lastMsg) {
+                    const ts = lastMsg.dataset.timestamp;
+                    lastDate = new Date(ts).toDateString();
+                }
+            } else if (messages.children.length === 0) {
+                // first message
+            } else {
+                const lastMsg = messages.querySelector('.message-row:last-child');
+                if (lastMsg) lastDate = new Date(lastMsg.dataset.timestamp).toDateString();
+            }
+
+            if (!lastSeparator || currentDate !== lastDate) {
+                addDateSeparator(timestamp);
+            }
+
+            renderMessage(text, role, timestamp);
+            saveToHistory(text, role, timestamp);
             messages.scrollTop = messages.scrollHeight;
-            return div;
+        }
+
+        function renderMessage(text, role, timestamp) {
+            const row = document.createElement('div');
+            row.className = 'message-row ' + role;
+            row.dataset.timestamp = timestamp;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'message ' + role;
+            bubble.innerHTML = escapeHtml(text);
+
+            const time = document.createElement('div');
+            time.className = 'message-time';
+            time.textContent = formatTime(timestamp);
+
+            row.appendChild(bubble);
+            row.appendChild(time);
+            messages.appendChild(row);
         }
 
         function escapeHtml(text) {
@@ -257,7 +385,14 @@
             input.value = '';
             send.disabled = true;
 
-            const thinking = addMsg('Matuzalen esta escribiendo...', 'typing');
+            const thinkingRow = document.createElement('div');
+            thinkingRow.className = 'message-row agent';
+            const thinking = document.createElement('div');
+            thinking.className = 'message agent typing';
+            thinking.textContent = 'Matuzalen esta escribiendo...';
+            thinkingRow.appendChild(thinking);
+            messages.appendChild(thinkingRow);
+            messages.scrollTop = messages.scrollHeight;
 
             try {
                 const r = await fetch('/api/chat/simple', {
@@ -266,11 +401,11 @@
                     body: JSON.stringify({message: text, user_id: userId})
                 });
                 const data = await r.json();
-                thinking.remove();
+                thinkingRow.remove();
                 addMsg(data.agent_response || 'No tengo respuesta ahora.', 'agent');
                 if (data.context_injected) loadPlan();
             } catch (err) {
-                thinking.remove();
+                thinkingRow.remove();
                 addMsg('Error de conexion. Intenta de nuevo.', 'agent');
             }
             send.disabled = false;
@@ -310,6 +445,7 @@
             } catch (e) {}
         }
 
+        loadHistory();
         loadPlan();
         updateState();
         setInterval(updateState, 10000);
