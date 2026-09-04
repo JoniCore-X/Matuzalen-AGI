@@ -23,7 +23,8 @@ use axum::{
 };
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
-// use p256::ecdsa::{Signature, VerifyingKey};
+use p256::ecdsa::{Signature, VerifyingKey};
+use p256::ecdsa::signature::Verifier;
 use rand::{Rng, RngCore};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -326,34 +327,130 @@ fn check_user_flags(authenticator_data: &[u8]) -> Result<(), String> {
     Ok(())
 }
 
+fn cose_to_sec1(cose_key: &[u8]) -> Result<Vec<u8>, String> {
+    // COSE_Key format for EC2/P-256:
+    // {1: 2, 3: -7, -1: 1, -2: x (32 bytes), -3: y (32 bytes)}
+    let value: serde_cbor::Value = serde_cbor::from_slice(cose_key)
+        .map_err(|_| "Invalid COSE key CBOR".to_string())?;
+
+    let map = match value {
+        serde_cbor::Value::Map(m) => m,
+        _ => return Err("COSE key is not a map".to_string()),
+    };
+
+    let kty = map.get(&serde_cbor::Value::Integer(1))
+        .ok_or("Missing kty")?;
+    if !matches!(kty, serde_cbor::Value::Integer(2)) {
+        return Err("Unsupported key type".to_string());
+    }
+
+    let crv = map.get(&serde_cbor::Value::Integer(-1))
+        .ok_or("Missing crv")?;
+    if !matches!(crv, serde_cbor::Value::Integer(1)) {
+        return Err("Unsupported curve".to_string());
+    }
+
+    let x = match map.get(&serde_cbor::Value::Integer(-2)) {
+        Some(serde_cbor::Value::Bytes(b)) if b.len() == 32 => b,
+        _ => return Err("Missing or invalid x coordinate".to_string()),
+    };
+
+    let y = match map.get(&serde_cbor::Value::Integer(-3)) {
+        Some(serde_cbor::Value::Bytes(b)) if b.len() == 32 => b,
+        _ => return Err("Missing or invalid y coordinate".to_string()),
+    };
+
+    let mut sec1 = Vec::with_capacity(65);
+    sec1.push(0x04); // uncompressed point
+    sec1.extend_from_slice(x);
+    sec1.extend_from_slice(y);
+    Ok(sec1)
+}
+
+fn extract_public_key_from_attestation(attestation_cbor: &[u8]) -> Result<(Vec<u8>, Vec<u8>, String), String> {
+    // attestationObject = { "fmt": "...", "attStmt": {...}, "authData": bytes }
+    let value: serde_cbor::Value = serde_cbor::from_slice(attestation_cbor)
+        .map_err(|_| "Invalid attestation CBOR".to_string())?;
+
+    let map = match value {
+        serde_cbor::Value::Map(m) => m,
+        _ => return Err("attestation is not a map".to_string()),
+    };
+
+    let auth_data = match map.get(&serde_cbor::Value::Text("authData".to_string())) {
+        Some(serde_cbor::Value::Bytes(b)) => b,
+        _ => return Err("Missing authData".to_string()),
+    };
+
+    if auth_data.len() < 37 {
+        return Err("authData too short".to_string());
+    }
+
+    let flags = auth_data[32];
+    let attested = flags & 0x40 != 0;
+    if !attested {
+        return Err("No attested credential data".to_string());
+    }
+
+    // Parse authData attested credential data
+    // offset 0-31: rpIdHash, 32: flags, 33-36: signCount
+    let mut pos = 37;
+
+    if pos + 16 > auth_data.len() {
+        return Err("authData too short for aaguid".to_string());
+    }
+    let aaguid = &auth_data[pos..pos + 16];
+    pos += 16;
+
+    if pos + 2 > auth_data.len() {
+        return Err("authData too short for credential id length".to_string());
+    }
+    let cred_id_len = u16::from_be_bytes([auth_data[pos], auth_data[pos + 1]]) as usize;
+    pos += 2;
+
+    if pos + cred_id_len > auth_data.len() {
+        return Err("authData too short for credential id".to_string());
+    }
+    let _credential_id = &auth_data[pos..pos + cred_id_len];
+    pos += cred_id_len;
+
+    if pos >= auth_data.len() {
+        return Err("Missing credential public key".to_string());
+    }
+
+    let cose_key = &auth_data[pos..];
+    let public_key = cose_to_sec1(cose_key)?;
+
+    Ok((public_key, auth_data.clone(), format!("{}-{}-{}-{}-{}",
+        aaguid[0], aaguid[1], aaguid[2], aaguid[3], aaguid[4])))
+}
+
 fn verify_signature(
-    _public_key: &[u8],
-    _authenticator_data: &[u8],
-    _client_data_hash: &[u8],
-    _signature: &[u8],
+    public_key: &[u8],
+    authenticator_data: &[u8],
+    client_data_hash: &[u8],
+    signature: &[u8],
 ) -> Result<(), String> {
-    // En produccion real:
-    // 1. Parsear public_key DER y crear VerifyingKey de p256
-    // 2. Concatenar authenticator_data + client_data_hash
-    // 3. Verificar Signature con VerifyingKey
-    //
-    // Para demo sin hardware FIDO2: se acepta como valida si los
-    // parametros tienen longitud razonable. Integrar p256 real antes
-    // de desplegar.
-
-    if _public_key.len() < 32 {
-        return Err("Invalid public key length".to_string());
+    if public_key.len() != 65 || public_key[0] != 0x04 {
+        return Err("Invalid public key: expected 65-byte uncompressed SEC1 P-256 point".to_string());
     }
-    if _signature.len() < 32 {
-        return Err("Invalid signature length".to_string());
+    if signature.len() < 10 {
+        return Err("Invalid signature: too short".to_string());
     }
 
-    // NOTA: El siguiente bloque es un placeholder. Activar cuando se
-    // disponga de credenciales reales generadas por un authenticator.
-    // let vk = VerifyingKey::from_sec1_bytes(_public_key).map_err(|_| "Invalid public key")?;
-    // let sig = Signature::from_der(_signature).map_err(|_| "Invalid signature")?;
-    // let signed = [_authenticator_data, _client_data_hash].concat();
-    // vk.verify(&signed, &sig).map_err(|_| "Invalid signature")?;
+    let verifying_key = VerifyingKey::from_sec1_bytes(public_key)
+        .map_err(|_| "Invalid P-256 public key".to_string())?;
+
+    let sig = Signature::from_der(signature)
+        .map_err(|_| "Invalid ECDSA signature DER".to_string())?;
+
+    let mut signed = Vec::with_capacity(authenticator_data.len() + client_data_hash.len());
+    signed.extend_from_slice(authenticator_data);
+    signed.extend_from_slice(client_data_hash);
+
+    verifying_key
+        .verify(&signed, &sig)
+        .map_err(|_| "ECDSA signature verification failed".to_string())?;
 
     Ok(())
 }
@@ -439,17 +536,18 @@ async fn register_finish(
     validate_origin(&client_data)
         .map_err(|e| (StatusCode::UNAUTHORIZED, e))?;
 
-    // 2. Extraer public_key del attestation object (simplificado)
-    // En produccion: parsear CBOR attestationObject, verificar attestation si aplica,
-    // extraer credentialPublicKey.
-    let public_key = decode_base64url(&req.attestation_object)
-        .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid attestation".to_string()))?;
+    // 2. Extraer public_key real del attestation object (CBOR WebAuthn)
+    let attestation_bytes = decode_base64url(&req.attestation_object)
+        .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid attestation base64".to_string()))?;
+
+    let (public_key, _auth_data, aaguid) = extract_public_key_from_attestation(&attestation_bytes)
+        .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
 
     let credential = PublicKeyCredential {
         credential_id: req.credential_id.clone(),
         public_key_der: public_key,
         counter: 0,
-        aaguid: "00000000-0000-0000-0000-000000000000".to_string(),
+        aaguid,
         transports: vec!["internal".to_string()],
         device_fingerprint: compute_device_fingerprint(&headers, &req.user_id),
         created_at: now_timestamp(),
