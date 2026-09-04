@@ -272,7 +272,8 @@
         const planBar = document.getElementById('plan-bar');
         const planToggle = document.getElementById('plan-toggle');
         const userId = 'user-001';
-        const STORAGE_KEY = 'matuzalen_chat_history';
+        const STORAGE_KEY = 'matuzalen_chat_history_v2';
+        let lastDate = null;
 
         function now() {
             return new Date().toISOString();
@@ -289,25 +290,38 @@
             const yesterday = new Date();
             yesterday.setDate(today.getDate() - 1);
 
-            const dateStr = d.toLocaleDateString('es-ES', {day: 'numeric', month: 'long'});
-
             if (d.toDateString() === today.toDateString()) return 'Hoy';
             if (d.toDateString() === yesterday.toDateString()) return 'Ayer';
-            return dateStr;
+            return d.toLocaleDateString('es-ES', {day: 'numeric', month: 'long'});
+        }
+
+        function getDateString(iso) {
+            return new Date(iso).toDateString();
         }
 
         function loadHistory() {
-            const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-            let lastDate = null;
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) return;
+
+            let data;
+            try {
+                data = JSON.parse(raw);
+            } catch (e) {
+                return;
+            }
+
+            if (!Array.isArray(data)) return;
 
             data.forEach(item => {
-                const currentDate = new Date(item.timestamp).toDateString();
+                const currentDate = getDateString(item.timestamp);
                 if (currentDate !== lastDate) {
                     addDateSeparator(item.timestamp);
                     lastDate = currentDate;
                 }
                 renderMessage(item.text, item.role, item.timestamp);
             });
+
+            messages.scrollTop = messages.scrollHeight;
         }
 
         function saveToHistory(text, role, timestamp) {
@@ -325,25 +339,11 @@
 
         function addMsg(text, role) {
             const timestamp = now();
-            const currentDate = new Date(timestamp).toDateString();
-            const lastSeparator = messages.querySelector('.date-separator:last-child');
-            let lastDate = null;
+            const currentDate = getDateString(timestamp);
 
-            if (lastSeparator) {
-                const lastMsg = messages.querySelector('.message-row:last-child');
-                if (lastMsg) {
-                    const ts = lastMsg.dataset.timestamp;
-                    lastDate = new Date(ts).toDateString();
-                }
-            } else if (messages.children.length === 0) {
-                // first message
-            } else {
-                const lastMsg = messages.querySelector('.message-row:last-child');
-                if (lastMsg) lastDate = new Date(lastMsg.dataset.timestamp).toDateString();
-            }
-
-            if (!lastSeparator || currentDate !== lastDate) {
+            if (currentDate !== lastDate) {
                 addDateSeparator(timestamp);
+                lastDate = currentDate;
             }
 
             renderMessage(text, role, timestamp);
