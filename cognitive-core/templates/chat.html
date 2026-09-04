@@ -3,137 +3,514 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Matuzalen AGI - Chat</title>
+    <title>Matuzalen AGI - Terminal Soberana</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-900: #05050a;
+            --bg-800: #0a0a14;
+            --bg-700: #12121f;
+            --bg-600: #1a1a2e;
+            --bg-500: #25253d;
+            --accent: #7c83ff;
+            --accent-2: #00d4ff;
+            --success: #00e676;
+            --warning: #ffab00;
+            --danger: #ff5252;
+            --text: #e8e8f0;
+            --text-sec: #9090a8;
+            --border: #2a2a4a;
+            --glow: rgba(124, 131, 255, 0.15);
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0f0f1a;
-            color: #e0e0e0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-900);
+            color: var(--text);
             height: 100vh;
+            overflow: hidden;
+            display: flex;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: var(--bg-800);
+            border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
+            padding: 24px 20px;
         }
-        header {
-            background: #1a1a2e;
-            padding: 16px 24px;
-            border-bottom: 1px solid #2a2a4a;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        header h1 { font-size: 18px; color: #7c83ff; }
-        .status {
+
+        .brand {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 12px;
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .brand-icon {
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; color: #fff;
+            box-shadow: 0 0 20px rgba(124, 131, 255, 0.3);
+        }
+
+        .brand-text h1 {
+            font-size: 18px; font-weight: 700; letter-spacing: -0.5px;
+        }
+        .brand-text span {
+            font-size: 11px; color: var(--text-sec); text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        .nav-section {
+            margin-bottom: 24px;
+        }
+
+        .nav-title {
+            font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px;
+            color: var(--text-sec); margin-bottom: 10px; padding-left: 12px;
+        }
+
+        .nav-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px;
+            border-radius: 8px;
+            color: var(--text-sec);
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 4px;
+            transition: all 0.2s;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: var(--bg-600);
+            color: var(--text);
+        }
+
+        .nav-item.active { border-left: 3px solid var(--accent); }
+
+        .nav-icon { width: 18px; text-align: center; }
+
+        .user-card {
+            margin-top: auto;
+            background: var(--bg-700);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .user-card label {
+            font-size: 11px; text-transform: uppercase; color: var(--text-sec); letter-spacing: 0.5px;
+        }
+
+        .user-card input {
+            width: 100%;
+            margin-top: 8px;
+            padding: 10px 12px;
+            background: var(--bg-800);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
             font-size: 13px;
-            color: #999;
+            outline: none;
         }
-        .dot {
-            width: 8px; height: 8px;
-            border-radius: 50%;
-            background: #555;
-        }
-        .dot.active { background: #4caf50; box-shadow: 0 0 8px #4caf50; }
-        .thoughts {
-            background: #12121f;
-            padding: 8px 24px;
-            font-size: 12px;
-            color: #888;
-            border-bottom: 1px solid #2a2a4a;
-            max-height: 60px;
+
+        .user-card input:focus { border-color: var(--accent); }
+
+        /* Main */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
             overflow: hidden;
         }
-        #messages {
+
+        .topbar {
+            height: 64px;
+            background: var(--bg-800);
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 28px;
+        }
+
+        .breadcrumbs {
+            font-size: 14px; color: var(--text-sec);
+        }
+
+        .breadcrumbs strong { color: var(--text); }
+
+        .service-status {
+            display: flex; gap: 20px;
+        }
+
+        .service-pill {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 12px; color: var(--text-sec);
+            background: var(--bg-700);
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .service-pill .dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #444;
+        }
+
+        .service-pill.online .dot { background: var(--success); box-shadow: 0 0 8px var(--success); }
+        .service-pill.offline .dot { background: var(--danger); }
+
+        /* Workspace */
+        .workspace {
             flex: 1;
-            overflow-y: auto;
-            padding: 24px;
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            overflow: hidden;
+        }
+
+        /* Chat panel */
+        .chat-panel {
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            border-right: 1px solid var(--border);
         }
-        .msg {
-            max-width: 75%;
-            padding: 12px 16px;
-            border-radius: 12px;
-            line-height: 1.5;
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 16px 18px;
+            border-radius: 14px;
+            line-height: 1.6;
+            font-size: 14px;
             white-space: pre-wrap;
             word-wrap: break-word;
+            animation: messageIn 0.3s ease;
         }
-        .msg.user {
+
+        @keyframes messageIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
             align-self: flex-end;
-            background: #7c83ff;
+            background: linear-gradient(135deg, #6366f1, #7c83ff);
             color: #fff;
             border-bottom-right-radius: 4px;
         }
-        .msg.agent {
+
+        .message.agent {
             align-self: flex-start;
-            background: #1e1e32;
-            border: 1px solid #2a2a4a;
+            background: var(--bg-700);
+            border: 1px solid var(--border);
             border-bottom-left-radius: 4px;
+            color: var(--text);
         }
-        .msg.thinking { color: #888; font-style: italic; }
-        form {
-            display: flex;
-            gap: 12px;
-            padding: 16px 24px;
-            background: #1a1a2e;
-            border-top: 1px solid #2a2a4a;
+
+        .message.typing {
+            color: var(--text-sec);
+            font-style: italic;
         }
-        input {
+
+        .message-time {
+            font-size: 10px;
+            opacity: 0.6;
+            margin-top: 8px;
+        }
+
+        .input-area {
+            padding: 20px 28px;
+            background: var(--bg-800);
+            border-top: 1px solid var(--border);
+        }
+
+        .input-box {
+            display: flex; gap: 12px;
+            background: var(--bg-700);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 8px;
+        }
+
+        .input-box input {
             flex: 1;
-            padding: 14px 16px;
-            border-radius: 8px;
-            border: 1px solid #2a2a4a;
-            background: #0f0f1a;
-            color: #e0e0e0;
+            background: transparent;
+            border: none;
+            color: var(--text);
             font-size: 15px;
+            padding: 12px 16px;
             outline: none;
         }
-        input:focus { border-color: #7c83ff; }
-        button {
-            padding: 14px 24px;
-            border-radius: 8px;
+
+        .input-box input::placeholder { color: var(--text-sec); }
+
+        .input-box button {
+            padding: 12px 22px;
+            background: var(--accent);
             border: none;
-            background: #7c83ff;
+            border-radius: 10px;
             color: #fff;
-            font-size: 15px;
-            cursor: pointer;
             font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
         }
-        button:disabled { background: #444; cursor: not-allowed; }
-        button:hover:not(:disabled) { background: #6a71ee; }
+
+        .input-box button:hover { background: #6a71ee; }
+        .input-box button:disabled { background: #3a3a5c; cursor: not-allowed; }
+
+        /* Right panel */
+        .info-panel {
+            background: var(--bg-800);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .panel-section {
+            padding: 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .panel-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-sec);
+            margin-bottom: 16px;
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        .consciousness-box {
+            background: var(--bg-700);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: var(--accent-2);
+            min-height: 80px;
+        }
+
+        .stat-row {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
+
+        .stat-row span:first-child { color: var(--text-sec); }
+        .stat-row span:last-child { color: var(--text); font-weight: 500; }
+
+        .plan-card {
+            background: var(--bg-700);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .plan-card h4 {
+            font-size: 14px; margin-bottom: 4px; color: var(--accent-2);
+        }
+
+        .plan-card p {
+            font-size: 12px; color: var(--text-sec); line-height: 1.5;
+        }
+
+        .risk-pill {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            margin-top: 8px;
+            background: rgba(255, 82, 82, 0.15);
+            color: #ff8585;
+            border: 1px solid rgba(255, 82, 82, 0.3);
+        }
+
+        .empty-state {
+            color: var(--text-sec);
+            font-size: 13px;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading-bar {
+            height: 2px;
+            width: 100%;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: var(--bg-600);
+            color: var(--text-sec);
+        }
+
+        .badge.omega { background: rgba(124, 131, 255, 0.2); color: var(--accent); }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--bg-500); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--bg-600); }
     </style>
 </head>
 <body>
-    <header>
-        <h1>Matuzalen AGI</h1>
-        <div class="status">
-            <span class="dot" id="dot"></span>
-            <span id="state">conectando...</span>
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-icon">M</div>
+            <div class="brand-text">
+                <h1>Matuzalen</h1>
+                <span>AGI Soberana</span>
+            </div>
         </div>
-    </header>
-    <div class="thoughts" id="thoughts">Conciencia: esperando...</div>
-    <div id="messages"></div>
-    <form id="form">
-        <input id="input" type="text" placeholder="Escribe tu mensaje..." autocomplete="off" autofocus>
-        <button id="send" type="submit">Enviar</button>
-    </form>
+
+        <div class="nav-section">
+            <div class="nav-title">Nucleo</div>
+            <div class="nav-item active" onclick="switchTab('chat')">
+                <span class="nav-icon">&#9993;</span> Terminal
+            </div>
+            <div class="nav-item" onclick="loadPlanContext()">
+                <span class="nav-icon">&#9733;</span> Planes
+            </div>
+            <div class="nav-item" onclick="awakenConsciousness()">
+                <span class="nav-icon">&#9851;</span> Despertar
+            </div>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-title">Sistemas</div>
+            <div class="nav-item" onclick="window.open('/api/health/')">
+                <span class="nav-icon">&#9769;</span> Salud
+            </div>
+            <div class="nav-item" onclick="window.open('/api/plan/events?plan_id='+activePlanId)">
+                <span class="nav-icon">&#9636;</span> Eventos
+            </div>
+        </div>
+
+        <div class="user-card">
+            <label>Identidad Soberana</label>
+            <input type="text" id="userId" value="user-001" placeholder="user_id">
+            <div style="margin-top:8px;font-size:11px;color:var(--text-sec)">
+                <span class="badge omega">Omega</span> Arquitecto
+            </div>
+        </div>
+    </aside>
+
+    <main class="main">
+        <header class="topbar">
+            <div class="breadcrumbs">
+                Matuzalen / <strong>Terminal Soberana</strong>
+            </div>
+            <div class="service-status">
+                <div class="service-pill" id="pill-ollama"><span class="dot"></span>Ollama</div>
+                <div class="service-pill" id="pill-neo4j"><span class="dot"></span>Neo4j</div>
+                <div class="service-pill" id="pill-qdrant"><span class="dot"></span>Qdrant</div>
+            </div>
+        </header>
+
+        <div class="workspace">
+            <section class="chat-panel">
+                <div id="loading" class="loading-bar" style="display:none;"></div>
+                <div class="messages" id="messages"></div>
+                <div class="input-area">
+                    <form class="input-box" id="form">
+                        <input id="input" type="text" placeholder="Ordena a Matuzalen..." autocomplete="off" autofocus>
+                        <button id="send" type="submit">Enviar</button>
+                    </form>
+                </div>
+            </section>
+
+            <aside class="info-panel">
+                <div class="panel-section">
+                    <div class="panel-title">&#9729; Pensamiento Autonomo</div>
+                    <div class="consciousness-box" id="thoughts">Conciencia: esperando...</div>
+                    <div class="stat-row" style="margin-top:12px;">
+                        <span>Estado</span>
+                        <span id="state-text">conectando...</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Ciclos</span>
+                        <span id="cycles">0</span>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <div class="panel-title">&#9733; Plan Activo</div>
+                    <div id="plan-container">
+                        <div class="empty-state">Sin plan activo. Crea uno con /plan</div>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <div class="panel-title">&#9888; Riesgos Criticos</div>
+                    <div id="risks-container">
+                        <div class="empty-state">Sin riesgos detectados</div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </main>
 
     <script>
         const messages = document.getElementById('messages');
         const form = document.getElementById('form');
         const input = document.getElementById('input');
         const send = document.getElementById('send');
+        const loading = document.getElementById('loading');
+        let activePlanId = null;
+
+        function getUserId() {
+            return document.getElementById('userId').value.trim() || 'anonymous';
+        }
 
         function addMsg(text, cls) {
             const div = document.createElement('div');
-            div.className = 'msg ' + cls;
-            div.textContent = text;
+            div.className = 'message ' + cls;
+            const now = new Date().toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'});
+            div.innerHTML = `<div>${escapeHtml(text)}</div><div class="message-time">${now}</div>`;
             messages.appendChild(div);
             messages.scrollTop = messages.scrollHeight;
             return div;
+        }
+
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\n/g, '<br>');
+        }
+
+        function formatTime(date) {
+            return new Date(date).toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'});
         }
 
         form.addEventListener('submit', async (e) => {
@@ -143,38 +520,126 @@
             addMsg(text, 'user');
             input.value = '';
             send.disabled = true;
-            const thinking = addMsg('Pensando...', 'agent thinking');
+            loading.style.display = 'block';
+
+            const thinking = document.createElement('div');
+            thinking.className = 'message agent typing';
+            thinking.textContent = 'Matuzalen esta pensando...';
+            messages.appendChild(thinking);
+            messages.scrollTop = messages.scrollHeight;
+
             try {
                 const r = await fetch('/api/chat/simple', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({message: text})
+                    body: JSON.stringify({message: text, user_id: getUserId()})
                 });
                 const data = await r.json();
                 thinking.remove();
                 addMsg(data.agent_response || data.error || 'Sin respuesta', 'agent');
+                if (data.context_injected) loadPlanContext();
             } catch (err) {
                 thinking.remove();
-                addMsg('Error: ' + err.message, 'agent');
+                addMsg('Error de conexion: ' + err.message, 'agent');
             }
             send.disabled = false;
+            loading.style.display = 'none';
             input.focus();
         });
 
-        async function updateState() {
+        async function updateConsciousness() {
             try {
                 const r = await fetch('/api/consciousness/state');
                 const s = await r.json();
-                document.getElementById('state').textContent = s.state;
-                document.getElementById('dot').className = 'dot' + (s.is_running ? ' active' : '');
+                document.getElementById('state-text').textContent = s.state;
+                document.getElementById('cycles').textContent = s.total_cycles || 0;
                 if (s.recent_thoughts && s.recent_thoughts.length) {
                     document.getElementById('thoughts').textContent =
-                        'Conciencia: ' + s.recent_thoughts[s.recent_thoughts.length - 1];
+                        '>> ' + s.recent_thoughts[s.recent_thoughts.length - 1];
                 }
             } catch (e) {}
         }
-        updateState();
-        setInterval(updateState, 5000);
+
+        async function loadPlanContext() {
+            try {
+                const r = await fetch('/api/plan/context?user_id=' + getUserId());
+                if (!r.ok) throw new Error('Sin plan');
+                const ctx = await r.json();
+                activePlanId = ctx.plan_id;
+
+                const planContainer = document.getElementById('plan-container');
+                const risksContainer = document.getElementById('risks-container');
+
+                if (ctx.plan_id) {
+                    let html = `
+                        <div class="plan-card">
+                            <h4>${ctx.plan_nombre}</h4>
+                            <p>${ctx.proposito}</p>
+                        </div>
+                    `;
+                    if (ctx.next_steps && ctx.next_steps.length) {
+                        html += `<div class="plan-card"><h4>Siguientes pasos</h4>`;
+                        ctx.next_steps.forEach(step => {
+                            html += `<p style="margin-top:8px">- ${step.descripcion} <span class="badge">P:${step.prioridad}</span></p>`;
+                        });
+                        html += `</div>`;
+                    }
+                    planContainer.innerHTML = html;
+                }
+
+                if (ctx.critical_risks && ctx.critical_risks.length) {
+                    risksContainer.innerHTML = ctx.critical_risks.map(r => `
+                        <div class="plan-card">
+                            <h4>${r.descripcion}</h4>
+                            <div class="risk-pill">Prob: ${r.probabilidad} / Impacto: ${r.impacto}</div>
+                        </div>
+                    `).join('');
+                } else {
+                    risksContainer.innerHTML = '<div class="empty-state">Sin riesgos criticos</div>';
+                }
+            } catch (e) {
+                console.log('Plan context error:', e);
+            }
+        }
+
+        async function checkServices() {
+            try {
+                const r = await fetch('/api/health/');
+                const h = await r.json();
+                setPill('pill-ollama', h.ollama);
+                setPill('pill-neo4j', h.neo4j);
+                setPill('pill-qdrant', h.qdrant);
+            } catch (e) {}
+        }
+
+        function setPill(id, online) {
+            const pill = document.getElementById(id);
+            if (online) {
+                pill.classList.add('online');
+                pill.classList.remove('offline');
+            } else {
+                pill.classList.remove('online');
+                pill.classList.add('offline');
+            }
+        }
+
+        function awakenConsciousness() {
+            fetch('/api/consciousness/control', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({action: 'awaken'})
+            }).then(updateConsciousness);
+        }
+
+        function switchTab(tab) {
+            // Placeholder para futuras vistas
+        }
+
+        updateConsciousness();
+        loadPlanContext();
+        checkServices();
+        setInterval(updateConsciousness, 5000);
+        setInterval(checkServices, 10000);
     </script>
 </body>
 </html>

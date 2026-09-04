@@ -105,3 +105,13 @@ build/
 test_*.py
 *_test.py
 tests/
+
+# Rust build artifacts
+**/target/
+Cargo.lock
+
+# Temporary request bodies
+auth_*.json
+plan_*.json
+chat_test.json
+commit_message.txt
