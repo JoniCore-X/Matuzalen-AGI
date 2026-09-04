@@ -4,50 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Matuzalen</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg: #0a0a14;
-            --surface: #141420;
-            --surface-2: #1c1c2c;
-            --border: #2a2a3d;
-            --text: #f0f0f5;
-            --muted: #9090a8;
-            --accent: #7c83ff;
-            --accent-2: #00d4ff;
-            --success: #00e676;
-            --user: #7c83ff;
-        }
-
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        html, body {
-            height: 100%;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            overflow: hidden;
-        }
-
-        .app {
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f5f7;
+            color: #1a1a1a;
             height: 100vh;
             display: flex;
             flex-direction: column;
-            max-width: 900px;
-            margin: 0 auto;
-            border-left: 1px solid var(--border);
-            border-right: 1px solid var(--border);
-            background: var(--surface);
         }
 
         header {
-            padding: 16px 24px;
-            background: var(--surface-2);
-            border-bottom: 1px solid var(--border);
+            background: #fff;
+            padding: 16px 20px;
+            border-bottom: 1px solid #e0e0e0;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
 
         .brand {
@@ -60,338 +37,205 @@
             width: 38px;
             height: 38px;
             border-radius: 50%;
-            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            background: #6366f1;
+            color: #fff;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 700;
-            font-size: 15px;
-            color: #fff;
-        }
-
-        .brand-text h1 {
-            font-size: 16px;
             font-weight: 600;
-            letter-spacing: -0.3px;
+            font-size: 15px;
         }
 
-        .brand-text p {
-            font-size: 12px;
-            color: var(--muted);
+        .brand h1 {
+            font-size: 17px;
+            font-weight: 600;
+        }
+
+        .brand span {
+            font-size: 13px;
+            color: #666;
         }
 
         .status {
             display: flex;
             align-items: center;
             gap: 8px;
-            font-size: 12px;
-            color: var(--muted);
+            font-size: 13px;
+            color: #666;
         }
 
         .dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: #555;
+            background: #ccc;
         }
 
-        .dot.online { background: var(--success); box-shadow: 0 0 8px var(--success); }
-
-        .toolbar {
-            display: flex;
-            gap: 8px;
-        }
-
-        .toolbar button {
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--muted);
-            padding: 8px 14px;
-            border-radius: 8px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .toolbar button:hover {
-            border-color: var(--accent);
-            color: var(--text);
-        }
-
-        .toolbar button.active {
-            background: rgba(124, 131, 255, 0.15);
-            border-color: var(--accent);
-            color: var(--text);
-        }
+        .dot.online { background: #22c55e; }
 
         .main {
             flex: 1;
-            display: flex;
-            overflow: hidden;
-        }
-
-        .chat-area {
-            flex: 1;
+            max-width: 800px;
+            width: 100%;
+            margin: 0 auto;
             display: flex;
             flex-direction: column;
+            background: #fff;
         }
 
         .messages {
             flex: 1;
             overflow-y: auto;
-            padding: 24px;
+            padding: 20px;
             display: flex;
             flex-direction: column;
-            gap: 18px;
+            gap: 12px;
         }
 
         .message {
-            max-width: 80%;
-            padding: 14px 16px;
-            border-radius: 16px;
-            line-height: 1.55;
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            line-height: 1.5;
             font-size: 15px;
             white-space: pre-wrap;
             word-wrap: break-word;
-            animation: in 0.25s ease;
-        }
-
-        @keyframes in {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
         }
 
         .message.user {
             align-self: flex-end;
-            background: var(--user);
+            background: #6366f1;
             color: #fff;
-            border-bottom-right-radius: 4px;
+            border-bottom-right-radius: 6px;
         }
 
         .message.agent {
             align-self: flex-start;
-            background: var(--surface-2);
-            border: 1px solid var(--border);
-            border-bottom-left-radius: 4px;
-            color: var(--text);
+            background: #f0f0f5;
+            color: #1a1a1a;
+            border-bottom-left-radius: 6px;
         }
 
-        .message.typing {
-            color: var(--muted);
-            font-style: italic;
-        }
+        .message.typing { color: #888; font-style: italic; }
 
         .input-area {
-            padding: 16px 24px;
-            background: var(--surface-2);
-            border-top: 1px solid var(--border);
+            padding: 16px 20px;
+            background: #fff;
+            border-top: 1px solid #e0e0e0;
         }
 
         .input-box {
             display: flex;
             gap: 10px;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 6px;
         }
 
         .input-box input {
             flex: 1;
-            background: transparent;
-            border: none;
-            color: var(--text);
+            padding: 14px 18px;
+            border: 1px solid #ddd;
+            border-radius: 24px;
             font-size: 15px;
-            padding: 12px 14px;
             outline: none;
         }
 
-        .input-box input::placeholder { color: var(--muted); }
+        .input-box input:focus { border-color: #6366f1; }
 
         .input-box button {
-            padding: 10px 20px;
-            background: var(--accent);
+            padding: 14px 22px;
             border: none;
-            border-radius: 10px;
+            border-radius: 24px;
+            background: #6366f1;
             color: #fff;
-            font-weight: 600;
-            font-size: 14px;
+            font-size: 15px;
+            font-weight: 500;
             cursor: pointer;
         }
 
-        .input-box button:disabled { background: #3a3a55; cursor: not-allowed; }
+        .input-box button:disabled { background: #a5a6f5; cursor: not-allowed; }
 
-        .context-drawer {
-            width: 320px;
-            background: var(--surface-2);
-            border-left: 1px solid var(--border);
+        .plan-bar {
+            padding: 12px 20px;
+            background: #fff;
+            border-bottom: 1px solid #e0e0e0;
             display: none;
-            flex-direction: column;
-            overflow-y: auto;
-            padding: 20px;
         }
 
-        .context-drawer.open { display: flex; }
+        .plan-bar.open { display: block; }
 
-        .context-title {
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            color: var(--muted);
-            margin-bottom: 14px;
-        }
-
-        .card {
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 14px;
-            margin-bottom: 14px;
-        }
-
-        .card h3 {
+        .plan-bar h3 {
             font-size: 14px;
             font-weight: 600;
-            margin-bottom: 6px;
-            color: var(--text);
+            margin-bottom: 4px;
         }
 
-        .card p {
+        .plan-bar p {
             font-size: 13px;
-            color: var(--muted);
-            line-height: 1.5;
+            color: #666;
         }
 
-        .next-step {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            padding: 10px 0;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .next-step:last-child { border-bottom: none; padding-bottom: 0; }
-
-        .next-step .num {
-            width: 22px;
-            height: 22px;
-            background: rgba(124, 131, 255, 0.2);
-            color: var(--accent);
-            border-radius: 50%;
-            font-size: 11px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .next-step .txt {
+        .plan-toggle {
+            background: transparent;
+            border: 1px solid #e0e0e0;
+            padding: 6px 14px;
+            border-radius: 16px;
             font-size: 13px;
-            color: var(--text);
+            color: #555;
+            cursor: pointer;
         }
 
-        .empty {
-            font-size: 13px;
-            color: var(--muted);
-            text-align: center;
-            padding: 24px;
-        }
-
-        .typing-dots {
-            display: inline-flex;
-            gap: 4px;
-            align-items: center;
-            padding: 4px 0;
-        }
-
-        .typing-dots span {
-            width: 6px;
-            height: 6px;
-            background: var(--muted);
-            border-radius: 50%;
-            animation: blink 1.4s infinite both;
-        }
-
-        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
-        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
-
-        @keyframes blink {
-            0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
-            40% { transform: scale(1); opacity: 1; }
-        }
+        .plan-toggle:hover { border-color: #6366f1; color: #6366f1; }
 
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-
-        @media (max-width: 640px) {
-            .context-drawer {
-                position: absolute;
-                right: 0;
-                top: 0;
-                bottom: 0;
-                width: 280px;
-                z-index: 10;
-            }
-        }
+        ::-webkit-scrollbar-thumb { background: #ddd; border-radius: 3px; }
     </style>
 </head>
 <body>
-    <div class="app">
-        <header>
-            <div class="brand">
-                <div class="avatar">M</div>
-                <div class="brand-text">
-                    <h1>Matuzalen</h1>
-                    <p>Tu asistente estratégico</p>
-                </div>
+    <header>
+        <div class="brand">
+            <div class="avatar">M</div>
+            <div>
+                <h1>Matuzalen</h1>
+                <span>Tu asistente</span>
             </div>
-            <div class="toolbar">
-                <button id="btn-context" onclick="toggleContext()">Ver mi situación</button>
-            </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+            <button class="plan-toggle" id="plan-toggle" onclick="togglePlan()">Ver mi plan</button>
             <div class="status">
                 <span class="dot online" id="dot"></span>
                 <span id="state-text">En linea</span>
             </div>
-        </header>
-
-        <div class="main">
-            <section class="chat-area">
-                <div class="messages" id="messages"></div>
-                <div class="input-area">
-                    <form class="input-box" id="form">
-                        <input id="input" type="text" placeholder="Escribe a Matuzalen..." autocomplete="off" autofocus>
-                        <button id="send" type="submit">Enviar</button>
-                    </form>
-                </div>
-            </section>
-
-            <aside class="context-drawer" id="context-drawer">
-                <div class="context-title">Tu situación</div>
-                <div id="context-content">
-                    <div class="empty">Aún no hay un plan activo.</div>
-                </div>
-            </aside>
         </div>
+    </header>
+
+    <div class="plan-bar" id="plan-bar">
+        <h3 id="plan-name">No tienes un plan activo</h3>
+        <p id="plan-next">Pregunta a Matuzalen como empezar.</p>
     </div>
+
+    <main class="main">
+        <div class="messages" id="messages"></div>
+        <div class="input-area">
+            <form class="input-box" id="form">
+                <input id="input" type="text" placeholder="Escribe un mensaje..." autocomplete="off" autofocus>
+                <button id="send" type="submit">Enviar</button>
+            </form>
+        </div>
+    </main>
 
     <script>
         const messages = document.getElementById('messages');
         const form = document.getElementById('form');
         const input = document.getElementById('input');
         const send = document.getElementById('send');
-        const drawer = document.getElementById('context-drawer');
-        const contextBtn = document.getElementById('btn-context');
+        const planBar = document.getElementById('plan-bar');
+        const planToggle = document.getElementById('plan-toggle');
         const userId = 'user-001';
 
         function addMsg(text, cls) {
             const div = document.createElement('div');
             div.className = 'message ' + cls;
-            if (cls === 'typing') {
-                div.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
-            } else {
-                div.innerHTML = escapeHtml(text);
-            }
+            div.innerHTML = escapeHtml(text);
             messages.appendChild(div);
             messages.scrollTop = messages.scrollHeight;
             return div;
@@ -413,7 +257,7 @@
             input.value = '';
             send.disabled = true;
 
-            const thinking = addMsg('', 'typing');
+            const thinking = addMsg('Matuzalen esta escribiendo...', 'typing');
 
             try {
                 const r = await fetch('/api/chat/simple', {
@@ -424,66 +268,37 @@
                 const data = await r.json();
                 thinking.remove();
                 addMsg(data.agent_response || 'No tengo respuesta ahora.', 'agent');
-                if (data.context_injected) loadContext();
+                if (data.context_injected) loadPlan();
             } catch (err) {
                 thinking.remove();
-                addMsg('No pude conectar. Intenta de nuevo.', 'agent');
+                addMsg('Error de conexion. Intenta de nuevo.', 'agent');
             }
             send.disabled = false;
             input.focus();
         });
 
-        function toggleContext() {
-            drawer.classList.toggle('open');
-            contextBtn.classList.toggle('active');
-            contextBtn.textContent = drawer.classList.contains('open') ? 'Ocultar' : 'Ver mi situación';
+        function togglePlan() {
+            planBar.classList.toggle('open');
+            planToggle.textContent = planBar.classList.contains('open') ? 'Ocultar plan' : 'Ver mi plan';
         }
 
-        async function loadContext() {
+        async function loadPlan() {
             try {
                 const r = await fetch('/api/plan/context?user_id=' + userId);
                 if (!r.ok) throw new Error('Sin plan');
                 const ctx = await r.json();
-                const container = document.getElementById('context-content');
-
-                let html = '';
 
                 if (ctx.plan_nombre) {
-                    html += `
-                        <div class="card">
-                            <h3>${ctx.plan_nombre}</h3>
-                            <p>${ctx.proposito}</p>
-                        </div>
-                    `;
+                    document.getElementById('plan-name').textContent = ctx.plan_nombre;
                 }
 
                 if (ctx.next_steps && ctx.next_steps.length) {
-                    html += '<div class="context-title">Proximos pasos</div>';
-                    html += '<div class="card">';
-                    ctx.next_steps.forEach((step, i) => {
-                        html += `
-                            <div class="next-step">
-                                <span class="num">${i + 1}</span>
-                                <span class="txt">${step.descripcion}</span>
-                            </div>
-                        `;
-                    });
-                    html += '</div>';
+                    const next = ctx.next_steps.map(s => s.descripcion).join(' · ');
+                    document.getElementById('plan-next').textContent = 'Proximo paso: ' + next;
+                } else {
+                    document.getElementById('plan-next').textContent = ctx.proposito || '';
                 }
-
-                if (ctx.critical_risks && ctx.critical_risks.length) {
-                    html += '<div class="context-title">Puntos de atencion</div>';
-                    html += '<div class="card">';
-                    ctx.critical_risks.forEach(risk => {
-                        html += `<p style="margin-bottom:8px;">- ${risk.descripcion}</p>`;
-                    });
-                    html += '</div>';
-                }
-
-                container.innerHTML = html || '<div class="empty">No hay informacion disponible.</div>';
-            } catch (e) {
-                document.getElementById('context-content').innerHTML = '<div class="empty">Aun no hay un plan activo.</div>';
-            }
+            } catch (e) {}
         }
 
         async function updateState() {
@@ -495,7 +310,7 @@
             } catch (e) {}
         }
 
-        loadContext();
+        loadPlan();
         updateState();
         setInterval(updateState, 10000);
     </script>
