@@ -258,27 +258,389 @@
             color: var(--muted);
             margin-top: 20px;
         }
+
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                linear-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px),
+                radial-gradient(circle at center, transparent 22%, rgba(0, 0, 0, 0.62) 100%);
+            background-size: 38px 38px, 38px 38px, 100% 100%;
+            pointer-events: none;
+        }
+
+        .login-shell {
+            width: min(440px, 100%);
+            padding: 2px;
+            border-radius: 26px;
+            background: radial-gradient(circle 150px at 82% -8%, #ffffff 0%, #6b6d77 12%, #252832 35%, #101117 68%);
+            box-shadow:
+                0 34px 90px rgba(0, 0, 0, 0.72),
+                0 0 30px rgba(0, 81, 255, 0.12),
+                0 0 80px rgba(0, 225, 255, 0.08);
+            position: relative;
+            isolation: isolate;
+            animation: shellFloat 6s ease-in-out infinite;
+        }
+
+        .login-shell::after {
+            content: '';
+            position: absolute;
+            width: 65%;
+            height: 42%;
+            border-radius: 140px;
+            top: -1px;
+            right: -1px;
+            box-shadow: 0 0 28px rgba(255, 255, 255, 0.18);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .login-shell > .blob1 {
+            position: absolute;
+            width: 190px;
+            height: 62%;
+            border-radius: 24px;
+            bottom: 0;
+            left: 0;
+            background: radial-gradient(circle 150px at 0% 100%, #3fe9ff 0%, rgba(0, 81, 255, 0.72) 28%, transparent 68%);
+            box-shadow: -18px 18px 46px rgba(0, 81, 255, 0.28);
+            filter: saturate(1.15);
+            pointer-events: none;
+            z-index: 0;
+            animation: lowerGlow 4.8s ease-in-out infinite;
+        }
+
+        .login-shell > .blob2 {
+            position: absolute;
+            width: 170px;
+            height: 150px;
+            border-radius: 50%;
+            top: -54px;
+            right: -36px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.42) 0%, rgba(124, 131, 255, 0.2) 28%, transparent 70%);
+            filter: blur(8px);
+            pointer-events: none;
+            z-index: 0;
+            animation: upperGlow 5.4s ease-in-out infinite;
+        }
+
+        .card {
+            max-width: none;
+            padding: 44px;
+            border: 0;
+            border-radius: 24px;
+            background:
+                radial-gradient(circle 180px at 82% -16%, rgba(132, 135, 145, 0.52) 0%, rgba(44, 46, 54, 0.42) 30%, transparent 64%),
+                radial-gradient(circle 240px at 0% 100%, rgba(0, 225, 255, 0.1), rgba(0, 0, 255, 0.08) 34%, transparent 70%),
+                linear-gradient(145deg, #11131a, #090a0f);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.12),
+                inset 0 -1px 0 rgba(0, 212, 255, 0.08);
+            z-index: 1;
+        }
+
+        .card::before {
+            inset: 0;
+            z-index: 0;
+            border-radius: 24px;
+            background:
+                linear-gradient(110deg, transparent 0%, transparent 44%, rgba(255, 255, 255, 0.035) 50%, transparent 56%),
+                radial-gradient(circle 110px at 0% 100%, rgba(0, 225, 255, 0.1), transparent 72%);
+            filter: none;
+            opacity: 1;
+            animation: surfaceLight 7s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        .card > * {
+            position: relative;
+            z-index: 2;
+        }
+
+        .avatar {
+            position: relative;
+            background:
+                radial-gradient(circle 34px at 78% 8%, #ffffff 0%, #8f929b 15%, #272a32 45%, #0f1116 74%),
+                #111318;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow:
+                0 0 0 1px rgba(0, 212, 255, 0.12),
+                -9px 12px 28px rgba(0, 81, 255, 0.36),
+                8px -8px 24px rgba(255, 255, 255, 0.1),
+                inset 0 -10px 24px rgba(0, 81, 255, 0.18);
+        }
+
+        .avatar::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: radial-gradient(circle 48px at 0% 100%, rgba(63, 233, 255, 0.62), rgba(0, 0, 255, 0.22) 38%, transparent 72%);
+            mix-blend-mode: screen;
+        }
+
+        h1 {
+            letter-spacing: -0.7px;
+            text-shadow: 0 0 18px rgba(255, 255, 255, 0.1), 0 0 28px rgba(0, 212, 255, 0.14);
+        }
+
+        .input-group label {
+            color: #b9bad0;
+            letter-spacing: 0.02em;
+        }
+
+        .field-realism {
+            position: relative;
+            border-radius: 14px;
+            padding: 1px;
+            background: radial-gradient(circle 95px at 82% -28%, #ffffff 0%, #454850 22%, #20232c 50%, #101116 78%);
+            box-shadow: 0 10px 26px rgba(0, 0, 0, 0.34), 0 0 16px rgba(0, 81, 255, 0.08);
+            isolation: isolate;
+        }
+
+        .field-blob1 {
+            position: absolute;
+            width: 82px;
+            height: 100%;
+            bottom: 0;
+            left: 0;
+            border-radius: 14px;
+            background: radial-gradient(circle 72px at 0% 100%, rgba(63, 233, 255, 0.52), rgba(0, 81, 255, 0.25) 36%, transparent 72%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .field-blob2 {
+            position: absolute;
+            width: 44%;
+            height: 70%;
+            top: 0;
+            right: 0;
+            border-radius: 80px;
+            box-shadow: 0 0 14px rgba(255, 255, 255, 0.11);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .field-inner {
+            position: relative;
+            border-radius: 13px;
+            background: radial-gradient(circle 105px at 82% -60%, #4d4f56 0%, #15171d 55%, #0d0f14 100%);
+            z-index: 2;
+            overflow: hidden;
+        }
+
+        .input-group input {
+            position: relative;
+            z-index: 3;
+            border: 0;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        .input-group input:focus {
+            border: 0;
+            box-shadow: inset 0 0 0 1px rgba(63, 233, 255, 0.68), 0 0 22px rgba(0, 81, 255, 0.22);
+        }
+
+        .btn {
+            cursor: pointer;
+            border-radius: 16px;
+            border: none;
+            padding: 2px;
+            background: radial-gradient(circle 90px at 80% -16%, #ffffff 0%, #555861 18%, #181b1b 55%);
+            position: relative;
+            isolation: isolate;
+            overflow: visible;
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.38);
+        }
+
+        .btn::after,
+        .btn-primary::after {
+            content: '';
+            position: absolute;
+            width: 65%;
+            height: 60%;
+            border-radius: 120px;
+            top: 0;
+            right: 0;
+            left: auto;
+            background: transparent;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.22);
+            transform: none;
+            transition: none;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .btn .blob1 {
+            position: absolute;
+            width: 96px;
+            height: 100%;
+            border-radius: 16px;
+            bottom: 0;
+            left: 0;
+            background: radial-gradient(circle 82px at 0% 100%, #3fe9ff 0%, rgba(0, 81, 255, 0.64) 32%, transparent 72%);
+            box-shadow: -10px 10px 30px rgba(0, 81, 255, 0.28);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .btn .blob2 {
+            position: absolute;
+            width: 90px;
+            height: 70%;
+            border-radius: 70px;
+            top: 0;
+            right: 0;
+            background: radial-gradient(circle at 100% 0%, rgba(255, 255, 255, 0.28), transparent 68%);
+            filter: blur(2px);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .btn .inner {
+            display: block;
+            width: 100%;
+            padding: 14px 25px;
+            border-radius: 14px;
+            color: #fff;
+            z-index: 3;
+            position: relative;
+            background: radial-gradient(circle 105px at 80% -56%, #70737b 0%, #25272e 30%, #0f1116 74%);
+            overflow: hidden;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+        }
+
+        .btn .inner::before {
+            content: '';
+            width: 100%;
+            height: 100%;
+            left: 0;
+            top: 0;
+            border-radius: 14px;
+            background: radial-gradient(circle 88px at 0% 100%, rgba(0, 225, 255, 0.22), rgba(0, 0, 255, 0.12) 38%, transparent 72%);
+            position: absolute;
+            pointer-events: none;
+        }
+
+        .btn-primary,
+        .btn-secondary {
+            border: 0;
+            color: #fff;
+        }
+
+        .btn-secondary {
+            background: radial-gradient(circle 90px at 80% -16%, #bdc4cb 0%, #3b4047 18%, #121518 55%);
+        }
+
+        .btn-secondary .blob1 {
+            background: radial-gradient(circle 82px at 0% 100%, rgba(63, 233, 255, 0.65), rgba(70, 47, 255, 0.42) 34%, transparent 72%);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 13px 34px rgba(0, 0, 0, 0.44), 0 0 22px rgba(0, 212, 255, 0.16);
+        }
+
+        .btn:hover .inner {
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 0 18px rgba(0, 81, 255, 0.16);
+        }
+
+        .btn:active {
+            transform: translateY(0) scale(0.99);
+        }
+
+        .btn:disabled {
+            opacity: 0.52;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .status {
+            backdrop-filter: blur(10px);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        .fingerprint {
+            border-image: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.28), transparent) 1;
+        }
+
+        @keyframes shellFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        @keyframes lowerGlow {
+            0%, 100% { opacity: 0.72; transform: scale(1); }
+            50% { opacity: 0.98; transform: scale(1.05); }
+        }
+
+        @keyframes upperGlow {
+            0%, 100% { opacity: 0.58; transform: translate(0, 0); }
+            50% { opacity: 0.85; transform: translate(-8px, 8px); }
+        }
+
+        @keyframes surfaceLight {
+            0%, 100% { background-position: -120% 0, 0 0; }
+            50% { background-position: 180% 0, 0 0; }
+        }
+
+        @media (max-width: 520px) {
+            body { padding: 14px; }
+            .card { padding: 34px 24px; }
+            .login-shell { animation: none; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="card">
-        <div class="avatar">M</div>
-        <h1>Matuzalen</h1>
-        <p class="subtitle">Acceso sin contraseñas. Solo tu dispositivo.</p>
+    <div class="login-shell">
+        <div class="blob1" aria-hidden="true"></div>
+        <div class="blob2" aria-hidden="true"></div>
+        <main class="card">
+            <div class="avatar">M</div>
+            <h1>Matuzalen</h1>
+            <p class="subtitle">Acceso sin contraseñas. Solo tu dispositivo.</p>
 
-        <div class="input-group">
-            <label for="userId">Identidad</label>
-            <input id="userId" type="text" value="user-001" placeholder="Tu ID de usuario">
-        </div>
+            <div class="input-group">
+                <label for="userId">Identidad</label>
+                <div class="field-realism">
+                    <div class="field-blob1" aria-hidden="true"></div>
+                    <div class="field-blob2" aria-hidden="true"></div>
+                    <div class="field-inner">
+                        <input id="userId" type="text" value="user-001" placeholder="Tu ID de usuario">
+                    </div>
+                </div>
+            </div>
 
-        <button class="btn btn-primary" id="btn-register" onclick="registerPasskey()">Crear llave de acceso</button>
-        <button class="btn btn-secondary" id="btn-login" onclick="loginPasskey()">Iniciar sesion</button>
+            <button class="btn btn-primary" id="btn-register" onclick="registerPasskey()">
+                <span class="blob1" aria-hidden="true"></span>
+                <span class="blob2" aria-hidden="true"></span>
+                <span class="inner">Crear llave de acceso</span>
+            </button>
+            <button class="btn btn-secondary" id="btn-login" onclick="loginPasskey()">
+                <span class="blob1" aria-hidden="true"></span>
+                <span class="blob2" aria-hidden="true"></span>
+                <span class="inner">Iniciar sesión</span>
+            </button>
 
-        <div class="status" id="status"></div>
+            <div class="status" id="status" role="status" aria-live="polite"></div>
 
-        <p class="note">Usa tu huella, Face ID o PIN del dispositivo. Nunca guardamos tu contraseña.</p>
+            <p class="note">Usa tu huella, Face ID o PIN del dispositivo. Nunca guardamos tu contraseña.</p>
 
-        <div class="fingerprint" id="fingerprint"></div>
+            <div class="fingerprint" id="fingerprint"></div>
+        </main>
     </div>
 
     <script>
